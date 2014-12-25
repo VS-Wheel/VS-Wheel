@@ -925,25 +925,25 @@ uint8_t * USBDevice::stringLangidDesc() {
     static uint8_t stringLangidDescriptor[] = {
         0x04,               /*bLength*/
         STRING_DESCRIPTOR,  /*bDescriptorType 0x03*/
-        0x09,0x00,          /*bString Lang ID - 0x009 - English*/
+        0x09,0x04,          /*bString Lang ID - 0x0409 - English*/
     };
     return stringLangidDescriptor;
 }
 
 uint8_t * USBDevice::stringImanufacturerDesc() {
     static uint8_t stringImanufacturerDescriptor[] = {
-        0x12,                                            /*bLength*/
+        0x10,                                            /*bLength*/
         STRING_DESCRIPTOR,                               /*bDescriptorType 0x03*/
-        'm',0,'b',0,'e',0,'d',0,'.',0,'o',0,'r',0,'g',0, /*bString iManufacturer - mbed.org*/
+        'V',0,'S',0,' ',0,'2',0,'0',0,'1',0,'4',0,       /*bString iManufacturer - VS 2014*/
     };
     return stringImanufacturerDescriptor;
 }
 
 uint8_t * USBDevice::stringIserialDesc() {
     static uint8_t stringIserialDescriptor[] = {
-        0x16,                                                           /*bLength*/
+        0x14,                                                           /*bLength*/
         STRING_DESCRIPTOR,                                              /*bDescriptorType 0x03*/
-        '0',0,'1',0,'2',0,'3',0,'4',0,'5',0,'6',0,'7',0,'8',0,'9',0,    /*bString iSerial - 0123456789*/
+        '2',0,'0',0,'1',0,'4',0,'-',0,'2',0,'0',0,'1',0,'5',0,          /*bString iSerial - 2014-2015*/
     };
     return stringIserialDescriptor;
 }
@@ -968,9 +968,9 @@ uint8_t * USBDevice::stringIinterfaceDesc() {
 
 uint8_t * USBDevice::stringIproductDesc() {
     static uint8_t stringIproductDescriptor[] = {
-        0x16,                                                       /*bLength*/
-        STRING_DESCRIPTOR,                                          /*bDescriptorType 0x03*/
-        'U',0,'S',0,'B',0,' ',0,'D',0,'E',0,'V',0,'I',0,'C',0,'E',0 /*bString iProduct - USB DEVICE*/
+        0x16,                                                                /*bLength*/
+        STRING_DESCRIPTOR,                                                   /*bDescriptorType 0x03*/
+        'V',0,'S',0,' ',0,'W',0,'h',0,'e',0,'e',0,'l',0,'U',0,'S',0,'B',0,   /*bString iProduct - VS Wheel USB*/
     };
     return stringIproductDescriptor;
 }

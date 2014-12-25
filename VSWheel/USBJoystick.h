@@ -121,7 +121,7 @@ class USBJoystick: public USBHID {
          * @param product_id Your product_id (default: 0x0002)
          * @param product_release Your product_release (default: 0x0001)
          */
-         USBJoystick(uint16_t vendor_id = 0x1234, uint16_t product_id = 0x0100, uint16_t product_release = 0x0001): 
+         USBJoystick(uint16_t vendor_id = 0x1337, uint16_t product_id = 0x7331, uint16_t product_release = 0x0001): 
              USBHID(0, 0, vendor_id, product_id, product_release, false)
              { 
                  _init();
@@ -139,55 +139,9 @@ class USBJoystick: public USBHID {
          * @param hat hat state 0 (up), 1 (right, 2 (down), 3 (left) or 4 (neutral)
          * @returns true if there is no error, false otherwise
          */
-         bool update(int16_t t, int16_t r, int16_t x, int16_t y, uint8_t buttons, uint8_t hat);
-
-         /**
-         * Write a state of the mouse
-         *
-         * @returns true if there is no error, false otherwise
-         */
-         bool update();
-
-         /**
-         * Move the throttle position
-         *
-         * @param t throttle position
-         * @returns true if there is no error, false otherwise
-         */
-         bool throttle(int16_t t);
+         bool update(int16_t x, int16_t y, uint32_t button, int8_t throttle, int8_t brake, int8_t clutch);
+        
          
-         /**
-         * Move the rudder position
-         *
-         * @param r rudder position
-         * @returns true if there is no error, false otherwise
-         */        
-         bool rudder(int16_t r);         
-
-         /**
-         * Move the cursor to (x, y)
-         *
-         * @param x-axis position
-         * @param y-axis position
-         * @returns true if there is no error, false otherwise
-         */
-         bool move(int16_t x, int16_t y);
-         
-         /**
-         * Press one or several buttons
-         *
-         * @param button button state
-         * @returns true if there is no error, false otherwise
-         */
-         bool button(uint8_t button);
-         
-         /**
-         * Press hat
-         *
-         * @param hat hat state
-         * @returns true if there is no error, false otherwise
-         */
-         bool hat(uint8_t hat);
          
          /*
          * To define the report descriptor. Warning: this method has to store the length of the report descriptor in reportLength.
@@ -197,12 +151,14 @@ class USBJoystick: public USBHID {
          virtual uint8_t * reportDesc();
 
      private:
-         int8_t _t;     
-         int8_t _r;              
-         int8_t _x;                       
-         int8_t _y;     
-         uint8_t _button;
-         uint8_t _hat; 
+        //very important           
+         int16_t _x;                       
+         int16_t _y;     
+         int8_t _throttle;
+         int8_t _brake;
+         int8_t _clutch;
+         uint32_t _button;
+         
          
          void _init();                 
 };

@@ -20,75 +20,42 @@
 #include "stdint.h"
 #include "USBJoystick.h"
 
-bool USBJoystick::update(int16_t t, int16_t r, int16_t x, int16_t y, uint8_t button, uint8_t hat) {
+bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle, int8_t brake, int8_t clutch) {
              HID_REPORT report;
-   _t = t;
-   _r = r;   
    _x = x;
    _y = y;
    _button = button;     
-   _hat = hat;
+   _throttle = throttle;
+   _brake = brake;
+   _clutch = clutch;
 
    // Fill the report according to the Joystick Descriptor
-   report.data[0] = _t & 0xff;            
-   report.data[1] = _r & 0xff;               
-   report.data[2] = _x & 0xff;            
-   report.data[3] = _y & 0xff;            
-   report.data[4] = ((_button & 0x0f) << 4) | (_hat & 0x0f) ;                                      
-   report.length = 5; 
+   report.data[0] = _throttle;
+   report.data[1] = _brake;
+   report.data[2] = _clutch;            
+   report.data[3] = _x & 0xff; 
+   report.data[4] = _x >> 8;           
+   report.data[5] = _y & 0xff;
+   report.data[6] = _y >> 8;            
+   report.data[7] = _button & 0xff;
+   report.data[8] = _button >> 8;                                                                         
+   report.data[9] = _button >> 16;
+   report.data[10] = _button >> 24;
+   report.length = 11; 
            
    return send(&report);
-}
- 
-bool USBJoystick::update() {
-   HID_REPORT report;
-
-   // Fill the report according to the Joystick Descriptor
-   report.data[0] = _t & 0xff;            
-   report.data[1] = _r & 0xff;               
-   report.data[2] = _x & 0xff;            
-   report.data[3] = _y & 0xff;            
-   report.data[4] = ((_button & 0x0f) << 4) | (_hat & 0x0f) ;                                      
-   report.length = 5; 
-
-   return send(&report);
-}
-
-bool USBJoystick::throttle(int16_t t) {
-     _t = t;
-     return update();
-}
-
-bool USBJoystick::rudder(int16_t r) {
-     _r = r;
-     return update();
-}
-
-bool USBJoystick::move(int16_t x, int16_t y) {
-     _x = x;
-     _y = y;
-     return update();
-}
-
-bool USBJoystick::button(uint8_t button) {
-     _button = button;
-     return update();
-}
-
-bool USBJoystick::hat(uint8_t hat) {
-     _hat = hat;
-     return update();
 }
 
 
 void USBJoystick::_init() {
 
-   _t = -127;
-   _r = -127;    
+   _throttle = -127;
+   _brake = -127;
+   _clutch = -127;   
    _x = 0;                       
    _y = 0;     
-   _button = 0x00;
-   _hat = 0x00;              
+   _button = 0x00000000;
+   //_hat = 0x00;              
 }
 
 
@@ -100,65 +67,83 @@ uint8_t * USBJoystick::reportDesc() {
              USAGE(1), 0x04,                // Usage (Joystick)
              COLLECTION(1), 0x01,           // Application
                USAGE_PAGE(1), 0x02,            // Simulation Controls
+  //             0x85,0x01,    //    Report ID 1
                USAGE(1), 0xBB,                 // Throttle             
-               USAGE(1), 0xBA,                 // Rudder               
+               USAGE(1), 0xC5,                 // Brake
+               USAGE(1), 0xC6,                 // Clutch               
                LOGICAL_MINIMUM(1), 0x81,       // -127
-               LOGICAL_MAXIMUM(1), 0x7f,       // 127
+               LOGICAL_MAXIMUM(1), 0x7F,       // 127
                REPORT_SIZE(1), 0x08,
-               REPORT_COUNT(1), 0x02,
+               REPORT_COUNT(1), 0x03,          //3, because (throttle,brake,clutch)
                INPUT(1), 0x02,                 // Data, Variable, Absolute               
                USAGE_PAGE(1), 0x01,            // Generic Desktop
                USAGE(1), 0x01,                 // Usage (Pointer)
                COLLECTION(1), 0x00,            // Physical
                  USAGE(1), 0x30,                 // X
                  USAGE(1), 0x31,                 // Y
+/*
 //  8 bit values
                  LOGICAL_MINIMUM(1), 0x81,       // -127
                  LOGICAL_MAXIMUM(1), 0x7f,       // 127
                  REPORT_SIZE(1), 0x08,
                  REPORT_COUNT(1), 0x02,
-                 INPUT(1), 0x02,                 // Data, Variable, Absolute                  
+                 INPUT(1), 0x02,                 // Data, Variable, Absolute   
+*/               
 // 16 bit values
-//                 LOGICAL_MINIMUM(1), 0x00,       // 0
-//                 LOGICAL_MAXIMUM(2), 0xff, 0x7f, // 32767
-//                 REPORT_SIZE(1), 0x10,
-//                 REPORT_COUNT(1), 0x02,
-//                 INPUT(1), 0x02,                 // Data, Variable, Absolute                
-
+                 LOGICAL_MINIMUM(1), 0x00,       // 0
+                 LOGICAL_MAXIMUM(2), 0xff, 0x7f, // 32768
+                 REPORT_SIZE(1), 0x10,
+                 REPORT_COUNT(1), 0x02,
+                 INPUT(1), 0x02,                 // Data, Variable, Absolute               
                END_COLLECTION(0),               
-// 4 Position Hat Switch
-//               USAGE(1), 0x39,                 // Usage (Hat switch)
-//               LOGICAL_MINIMUM(1), 0x00,       // 0
-//               LOGICAL_MAXIMUM(1), 0x03,       // 3
-//               PHYSICAL_MINIMUM(1), 0x00,      // Physical_Minimum (0)
-//               PHYSICAL_MAXIMUM(2), 0x0E, 0x01, // Physical_Maximum (270)
-//               UNIT(1), 0x14,                  // Unit (Eng Rot:Angular Pos)                            
-//               REPORT_SIZE(1), 0x04,
-//               REPORT_COUNT(1), 0x01,
-//               INPUT(1), 0x02,                 // Data, Variable, Absolute               
-// 8 Position Hat Switch
-               USAGE(1), 0x39,                 // Usage (Hat switch)
-               LOGICAL_MINIMUM(1), 0x00,       // 0
-               LOGICAL_MAXIMUM(1), 0x07,       // 7
-               PHYSICAL_MINIMUM(1), 0x00,      // Physical_Minimum (0)
-               PHYSICAL_MAXIMUM(2), 0x3B, 0x01, // Physical_Maximum (315)
-               UNIT(1), 0x14,                  // Unit (Eng Rot:Angular Pos)                            
-               REPORT_SIZE(1), 0x04,
-               REPORT_COUNT(1), 0x01,
-               INPUT(1), 0x02,                 // Data, Variable, Absolute               
 //
                USAGE_PAGE(1), 0x09,            // Buttons
-               USAGE_MINIMUM(1), 0x01,         // 1
-               USAGE_MAXIMUM(1), 0x04,         // 4
+               USAGE_MINIMUM(1), 0x00,         // 1
+               USAGE_MAXIMUM(1), 0x20,         // 32
                LOGICAL_MINIMUM(1), 0x00,       // 0
                LOGICAL_MAXIMUM(1), 0x01,       // 1
-               REPORT_SIZE(1), 0x01,
-               REPORT_COUNT(1), 0x04,
+               REPORT_SIZE(1), 0x01,           // 8 bytes
+               REPORT_COUNT(1), 0x20,          // 32 bytes
                UNIT_EXPONENT(1), 0x00,         // Unit_Exponent (0)
                UNIT(1), 0x00,                  // Unit (None)                                           
                INPUT(1), 0x02,                 // Data, Variable, Absolute
-             END_COLLECTION(0)
-
+             END_COLLECTION(0),
+/*
+             //need report ID
+               0x09,0x21,    //    Usage Set Effect Report (USAGE)
+                  0xA1,0x02,    //    Collection Datalink
+                     0x85,0x02,    //    Report ID 2
+                     0x09,0x22,    //    Usage Effect Block Index
+                     0x15,0x01,    //    Logical Minimum 1
+                     0x25,0x28,    //    Logical Maximum 28h (40d)
+                     0x35,0x01,    //    Physical Minimum 1
+                     0x45,0x28,    //    Physical Maximum 28h (40d)
+                     0x75,0x08,    //    Report Size 8
+                     0x95,0x01,    //    Report Count 1
+                     0x91,0x02,    //    Output (Variable)
+                     0x09,0x25,    //    Usage Effect Type
+                     0xA1,0x02,    //    Collection Datalink
+                        0x09,0x26,    //    Usage ET Constant Force
+                        0x09,0x27,    //    Usage ET Ramp
+                        0x09,0x30,    //    Usage ET Square
+                        0x09,0x31,    //    Usage ET Sine
+                        0x09,0x32,    //    Usage ET Triangle
+                        0x09,0x33,    //    Usage ET Sawtooth Up
+                        0x09,0x34,    //    Usage ET Sawtooth Down
+                        0x09,0x40,    //    Usage ET Spring
+                        0x09,0x41,    //    Usage ET Damper
+                        0x09,0x42,    //    Usage ET Inertia
+                        0x09,0x43,    //    Usage ET Friction
+                        0x09,0x28,    //    Usage ET Custom Force Data
+                        0x25,0x0C,    //    Logical Maximum Ch (12d)
+                        0x15,0x01,    //    Logical Minimum 1
+                        0x35,0x01,    //    Physical Minimum 1
+                        0x45,0x0C,    //    Physical Maximum Ch (12d)
+                        0x75,0x08,    //    Report Size 8
+                        0x95,0x01,    //    Report Count 1
+                        0x91,0x00,    //    Output
+                     0xC0,              //    End Collection
+                  0xC0              //    End Collection*/
         };
 
       reportLength = sizeof(reportDescriptor);
