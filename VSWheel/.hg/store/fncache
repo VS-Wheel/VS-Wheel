@@ -1,0 +1,5 @@
+data/mbed.bld.i
+data/USBDevice.lib.i
+data/main.cpp.i
+data/USBJoystick.h.i
+data/USBJoystick.cpp.i
