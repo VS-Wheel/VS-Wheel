@@ -29,4 +29,7 @@
 # Links
 *.lnk
 
+# Misc
 *.ini
+*.d
+*.map
