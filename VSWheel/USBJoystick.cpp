@@ -30,7 +30,7 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    _clutch = clutch;
 
    // Fill the report according to the Joystick Descriptor
-   /*
+   
    report.data[0] = 0x01;   // Report ID 1
    report.data[1] = _throttle;
    report.data[2] = _brake;
@@ -43,20 +43,68 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    report.data[9] = _button >> 8;                                                                         
    report.data[10] = _button >> 16;
    report.data[11] = _button >> 24;
-   */
-   report.data[0] = 0x01;   // Report ID 1
-   report.data[1] = _throttle;
-   report.data[2] = _brake;
-   report.data[3] = _clutch;    
-   report.data[4] = _button & 0xff;
-   report.data[5] = _button >> 8;                                                                         
-   report.data[6] = _button >> 16;
-   report.data[7] = _button >> 24;    
-   report.data[8] = _x & 0xff; 
-   report.data[9] = _x >> 8;           
-   report.data[10] = _y & 0xff;
-   report.data[11] = _y >> 8;            
-   report.data[12] = 0x02;   // Report ID 2
+   
+   //report id 1
+   //effect block index
+   //duration
+   //sample period
+   //gain
+   //type specific block offset 1
+   //type specific block offset 2
+
+   //report id 2
+   //parameter block offset (bits 7-0)
+   //parameter block offset (bits 14-8)
+   //Attack level
+   //attack time
+   //fade level
+   //fade time
+
+   //report id 3
+   //parameter block offset (bits 7-0)
+   //parameter block offset (bits 14-8)
+   //cp offset
+   //positive coefficient
+   //negative coefficient
+   //positive saturation
+   //negative saturation
+   //dead band
+
+   //report id 4
+   //parameter block (bits 7-0)
+   //parameter block (bits 14-8)
+   //magnitude
+   //offset
+   //phase
+   //period
+
+   //report id 5
+   //parameter offset (bits 7-0)
+   //parameter block offset (bits 14-8)
+   //magnitude
+
+   //ramp report that I did not do
+
+   //report id 7
+   //parameter block offset (bits 7-0)
+   //parameter block offset (bits 14-8)
+   //byte count (bits 8-1)
+   //custom force data (256 bytes)
+
+   //Some stuff that I remove 
+
+   //report id 9
+   //parameter block offset 
+   //custom force data offset 
+   //sample count
+
+   //report id 10
+   //effect block index 
+   //effect operation
+   //loop count
+
+   //Some stuff that I remove 
+
 
    report.length = 13; 
            
