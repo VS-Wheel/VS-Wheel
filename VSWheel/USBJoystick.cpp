@@ -28,6 +28,13 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    _throttle = throttle;
    _brake = brake;
    _clutch = clutch;
+   int duration;
+   int samplePeriod;
+   int gain;
+   int attackLevel;
+   int attackTime;
+   int fadeLevel;
+   int fadeTime;
 
    // Fill the report according to the Joystick Descriptor
    
@@ -51,6 +58,14 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    //gain
    //type specific block offset 1
    //type specific block offset 2
+   report.data[12] = 0x01;
+   report.data[13] = ;
+   report.data[14] = duration;
+   report.data[15] = samplePeriod;
+   report.data[16] = gain;
+   report.data[17] = ;
+   report.data[18] = ;
+
 
    //report id 2
    //parameter block offset (bits 7-0)
@@ -59,6 +74,13 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    //attack time
    //fade level
    //fade time
+   report.data[19] = 0x02;
+   report.data[20] = ;
+   report.data[21] = ;
+   report.data[22] = attackLevel;
+   report.data[23] = attackTime;
+   report.data[24] = fadeLevel;
+   report.data[25] = fadeTime;
 
    //report id 3
    //parameter block offset (bits 7-0)
