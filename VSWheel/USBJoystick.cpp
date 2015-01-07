@@ -50,7 +50,7 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    report.data[9] = _button >> 8;                                                                         
    report.data[10] = _button >> 16;
    report.data[11] = _button >> 24;
-   
+   /*
    //report id 1
    //effect block index
    //duration
@@ -81,7 +81,7 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    report.data[23] = attackTime;
    report.data[24] = fadeLevel;
    report.data[25] = fadeTime;
-
+*/
    //report id 3
    //parameter block offset (bits 7-0)
    //parameter block offset (bits 14-8)
@@ -128,7 +128,7 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    //Some stuff that I remove 
 
 
-   report.length = 13; 
+   report.length = 12; 
            
    return send(&report);
 }
@@ -194,9 +194,9 @@ uint8_t * USBJoystick::reportDesc() {
                UNIT_EXPONENT(1), 0x00,         // Unit_Exponent (0)
                UNIT(1), 0x00,                  // Unit (None)                                           
                INPUT(1), 0x02,                 // Data, Variable, Absolute
-             //END_COLLECTION(0),
-              
-
+             END_COLLECTION(0),
+             0xC0 
+/*
              // Force Feedback Descriptor from this website
              // http://www.usb.org/developers/hidpage/pid1_01.pdf
 
@@ -231,6 +231,8 @@ uint8_t * USBJoystick::reportDesc() {
                 0x25,0x0A,    //  Logical maximum (10)
                 0x91,0x00,    //  Output (Data, Var, Abs)
               0xC0,   //  End Collection
+            0xC0,   //  End Collection
+          
 
               0x09,0x50,    //  Usage (Duration)
               0x09,0x54,    //  Usage (Trigger Repeat Interval)
@@ -250,6 +252,7 @@ uint8_t * USBJoystick::reportDesc() {
               0x45,0x00,    //  Physical maximum (0)
               0x55,0x00,    //  Unit exposant(0)
               0x65,0x00,    //  Unit none
+              0xC0
 
               //  So skip a a part in the pdf not necessary I THINK FOR NOW            
               0x05,0x0F,    //  Usage page (Physical interface)
@@ -467,12 +470,10 @@ uint8_t * USBJoystick::reportDesc() {
                 0x26,0xFF,0x00,   //  Logical maximum (255)
                 0x91,0x02,    //  Output (Data, Var, Abs)
               0xC0,   //  End collection
-            0xC0
+            0xC0,
+*/
               //I skip the rest of the code because it seems to be useless for our project 
-
-
-
-
+            
         };
 
       reportLength = sizeof(reportDescriptor);
