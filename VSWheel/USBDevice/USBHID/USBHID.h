@@ -60,7 +60,7 @@ public:
     * @param product_release Your preoduct_release
     * @param connect Connect the device
     */
-    USBHID(uint8_t output_report_length = 64, uint8_t input_report_length = 64, uint16_t vendor_id = 0x1234, uint16_t product_id = 0x0006, uint16_t product_release = 0x0001, bool connect = true);
+    USBHID(uint8_t output_report_length = 64, uint8_t input_report_length = 64, uint16_t vendor_id = 0x1337, uint16_t product_id = 0x7331, uint16_t product_release = 0x0001, bool connect = true);
 
 
     /**
