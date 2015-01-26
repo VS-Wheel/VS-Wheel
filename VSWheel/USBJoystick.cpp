@@ -28,16 +28,19 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    _throttle = throttle;
    _brake = brake;
    _clutch = clutch;
-   
+
    /*
-   int duration;
-   int samplePeriod;
-   int gain;
-   int attackLevel;
-   int attackTime;
-   int fadeLevel;
-   int fadeTime;
-  */
+   if(dat.length > 0)
+   {
+    for(int y=0;y<dat.length;y++)
+    {
+      test[y] = dat.data[y];
+    }
+       _button = test[0] + (test[1] << 8) + (test[2] << 16) + (test[3] << 24);
+      
+       _button = dat.length;
+      _button = dat.data[0] + (dat.data[1] << 8) + (dat.data[2] << 16) + (dat.data[3] << 24);
+   }*/
 
    // Fill the report according to the Joystick Descriptor
    
@@ -53,26 +56,14 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle,
    report.data[9] = _button >> 8;                                                                         
    report.data[10] = _button >> 16;
    report.data[11] = _button >> 24;
+   report.length = 12; 
 
-
-   report.data[12] = 0x01;
-  
-   report.data[14] = 0x04;
-   report.data[15] = 0x05;
-   report.data[16] = 0x06;
-   report.data[17] = 0x07;
-   report.data[18] = 0x08;
-   report.data[19] = 0x09;
-   report.data[20] = 0x0A;
-   report.data[21] = 0x0B;
-   report.data[22] = 0x0C;
-   report.data[23] = 0x0D;
-   report.data[24] = 0x0E;
-   report.data[25] = 0x0F;
-
-   report.length = 26; 
-           
    return send(&report);
+}
+
+bool USBJoystick::retrieveFFBData() {
+             HID_REPORT data;
+   return readNB(&data);
 }
 
 
@@ -83,105 +74,61 @@ void USBJoystick::_init() {
    _clutch = -127;   
    _x = 0;                       
    _y = 0;     
-   _button = 0x00000000;
-   //_hat = 0x00;              
+   _button = 0x00000000;    
+
+   /*
+   for(int i=0;i<64;i++)
+   {
+      test[i] = 0;
+   }
+   */
 }
 
 
 uint8_t * USBJoystick::reportDesc() {    
          static uint8_t reportDescriptor[] = {
-/
-             USAGE_PAGE(1), 0x01,           // Generic Desktop           
-             LOGICAL_MINIMUM(1), 0x00,      // Logical_Minimum (0)             
-             USAGE(1), 0x04,                // Usage (Joystick)
-             COLLECTION(1), 0x01,           // Application
-               USAGE_PAGE(1), 0x02,            // Simulation Controls
-               0x85,0x01,    //    Report ID 1
-               USAGE(1), 0xBB,                 // Throttle             
-               USAGE(1), 0xC5,                 // Brake
-               USAGE(1), 0xC6,                 // Clutch               
-               LOGICAL_MINIMUM(1), 0x81,       // -127
-               LOGICAL_MAXIMUM(1), 0x7F,       // 127
-               REPORT_SIZE(1), 0x08,
-               REPORT_COUNT(1), 0x03,          //3, because (throttle,brake,clutch)
-               INPUT(1), 0x02,                 // Data, Variable, Absolute               
-               USAGE_PAGE(1), 0x01,            // Generic Desktop
-               USAGE(1), 0x01,                 // Usage (Pointer)
-               COLLECTION(1), 0x00,            // Physical
-                 USAGE(1), 0x30,                 // X
-                 USAGE(1), 0x31,                 // Y
 
-//  8 bit values
-//                 LOGICAL_MINIMUM(1), 0x81,       // -127
-//                 LOGICAL_MAXIMUM(1), 0x7f,       // 127
-//                 REPORT_SIZE(1), 0x08,
-//                 REPORT_COUNT(1), 0x02,
-//                 INPUT(1), 0x02,                 // Data, Variable, Absolute   
-               
-// 16 bit values
-                 LOGICAL_MINIMUM(1), 0x00,       // 0
-                 LOGICAL_MAXIMUM(2), 0xff, 0x7f, // 32768
-                 REPORT_SIZE(1), 0x10,
-                 REPORT_COUNT(1), 0x02,
-                 INPUT(1), 0x02,                 // Data, Variable, Absolute               
-               END_COLLECTION(0),               
-//
-               USAGE_PAGE(1), 0x09,            // Buttons
-               USAGE_MINIMUM(1), 0x00,         // 1
-               USAGE_MAXIMUM(1), 0x20,         // 32
-               LOGICAL_MINIMUM(1), 0x00,       // 0
-               LOGICAL_MAXIMUM(1), 0x01,       // 1
-               REPORT_SIZE(1), 0x01,           // 8 bytes
-               REPORT_COUNT(1), 0x20,          // 32 bytes
-               UNIT_EXPONENT(1), 0x00,         // Unit_Exponent (0)
-               UNIT(1), 0x00,                  // Unit (None)                                           
-               INPUT(1), 0x02,                 // Data, Variable, Absolute
+  // Start of Joystick Inputs definition
+  0x05,0x01, // Usage Page (Generic Desktop)
+  0x15,0x00, // Logical Minimum (0)
+  0x09,0x04, // Usage (Joystick)
+  0xA1,0x01, // Collection (Application)
 
- 
-/*
- 0x05,0x01,  //    Usage Page Generic Desktop
- 0x09,0x04,  //    Usage Joystick
- 0xA1,0x01,  //    Collection Application
-    0x85,0x01,        //    Report ID 1
-    0x09,0x30,        //    Usage X
-    0x16,0x00,0xFE,   //    Logical Minimum FE00h (-512d)
-    0x26,0xFF,0x01,   //    Logical Maximum 1FFh (511d)
-    0x35,0x00,        //    Physical Minimum 0
-    0x46,0xFF,0x03,   //    Physical Maximum 3FFh (1023d)
-    0x75,0x0A,        //    Report Size Ah (10d)
-    0x95,0x01,        //    Report Count 1
-    0x81,0x02,        //    Input (Variable)
-    0x75,0x06,        //    Report Size 6
-    0x81,0x03,        //    Input (Constant, Variable)
-    0xA1,0x00,        //    Collection Linked
-       0x05,0x01,        //    Usage Page Generic Desktop
-       0x09,0x31,        //    Usage Y
-       0x15,0x00,        //    Logical Minimum 0
-       0x25,0x3F,        //    Logical Maximum 3Fh (63d)
-       0x35,0x00,        //    Physical Minimum 0
-       0x45,0x3F,        //    Physical Maximum 3Fh (63d)
-       0x75,0x06,        //    Report Size 6
-       0x95,0x01,        //    Report Count 1
-       0x81,0x02,        //    Input (Variable)
-       0x75,0x02,        //    Report Size 2
-       0x81,0x03,        //    Input (Constant, Variable)
-       0x09,0x35,        //    Usage Rz
-       0x75,0x06,        //    Report Size 6
-       0x81,0x02,        //    Input (Variable)
-       0x75,0x02,        //    Report Size 2
-       0x81,0x03,        //    Input (Constant, Variable)
-    0xC0    ,         //    End Collection
-    0x05,0x09,        //    Usage Page Button
-    0x15,0x00,        //    Logical Minimum 0
-    0x19,0x01,        //    Usage Minimum Button 1
-    0x29,0x08,        //    Usage Maximum Button 8
-    0x25,0x01,        //    Logical Maximum 1
-    0x35,0x00,        //    Physical Minimum 0
-    0x45,0x01,        //    Physical Maximum 1
-    0x75,0x01,        //    Report Size 1
-    0x95,0x08,        //    Report Count 8
-    0x81,0x02,        //    Input (Variable)
-    */
+    0x05,0x02, // Usage Page (Simulation Controls)
+    0x85,0x01, // Report ID (1)
+    0x09,0xBB, // Usage (Throttle)
+    0x09,0xC5, // Usage (Brake)
+    0x09,0xC6, // Usage (Clutch)
+    0x15,0x81, // Logical Minimum (-127)
+    0x25,0x7F, // Logical Maximum (127)
+    0x75,0x08, // Report Size (8)
+    0x95,0x03, // Report Count (3) - Because (Throttle, Brake, Clutch)
+    0x81,0x02, // Input (Data, Variable, Absolute)
+    0x05,0x01, // Usage Page (Generic Desktop)
+    
+    0x09,0x01, // Usage (Pointer)
+    0xA1,0x00, // Collection (Physical)
+      0x09,0x30, // Usage (X)
+      0x09,0x31, // Usage (Y)
+      0x15,0x00, // Logical Minimum (0)
+      0x26,0xFF,0x7F, // Logical Maximum (32767)
+      0x75,0x10, // Report Size (10)
+      0x95,0x02, // Report Count (2)
+      0x81,0x02, // Input (Data, Variable, Absolute)
+    0xC0, // End Collection
+    
+    0x05,0x09, // Usage Page (Button)
+    0x19,0x00, // Usage Minimum (0) - Nothing pressed
+    0x29,0x20, // Usage Maximum (32)
+    0x15,0x00, // Logical Minimum (0)
+    0x25,0x01, // Logical Maximum (1)
+    0x75,0x01, // Report Size (1)
+    0x95,0x20, // Report Count (32)
+    0x55,0x00, // Unit Exponent (0)
+    0x65,0x00, // Unit (None)
+    0x81,0x02, // Input (Data, Variable, Absolute)
+    // End of Joystick Inputs definition
+
     /*
     0x06,0x01,0xFF,   //    Usage Page Generic Desktop
     0x09,0x49,        //    Usage Undefined
@@ -224,8 +171,12 @@ uint8_t * USBJoystick::reportDesc() {
        0x75,0x07,    //    Report Size 7
        0x95,0x01,    //    Report Count 1
        0x81,0x02,    //    Input (Variable)
-    0xC0  ,     // End Collection
+    0xC0,     // End Collection
     */
+
+    // Start Force Feedback definitions
+    0x05,0x0F,    // Usage Page Physical Interface
+    
     0x09,0x21,    //    Usage Set Effect Report
     0xA1,0x02,    //    Collection Datalink
        0x85,0x01,    //    Report ID 1
@@ -259,6 +210,7 @@ uint8_t * USBJoystick::reportDesc() {
           0x95,0x01,    //    Report Count 1
           0x91,0x00,    //    Output
        0xC0    ,          //    End Collection
+
        0x09,0x50,         //    Usage Duration
        0x09,0x54,         //    Usage Trigger Repeat Interval
        0x09,0x51,         //    Usage Sample Period
@@ -547,11 +499,11 @@ uint8_t * USBJoystick::reportDesc() {
        0x05,0x01,         //    Usage Page Generic Desktop
        0x09,0x30,         //    Usage X
        0x09,0x31,         //    Usage Y
-       0x15,0x81,         //    Logical Minimum 81h (-127d)
-       0x25,0x7F,         //    Logical Maximum 7Fh (127d)
+       0x15,0x00,         //    Logical Minimum 81h (0)
+       0x26,0xFF,0x7F,    //    Logical Maximum (32767d)
        0x35,0x00,         //    Physical Minimum 0
        0x46,0xFF,0x00,    //    Physical Maximum FFh (255d)
-       0x75,0x08,         //    Report Size 8
+       0x75,0x10,         //    Report Size 10h
        0x95,0x02,         //    Report Count 2
        0x91,0x02,         //    Output (Variable)
     0xC0     ,   //    End Collection
@@ -760,10 +712,6 @@ uint8_t * USBJoystick::reportDesc() {
  0xC0    //    End Collection
  
         };
-
-
       reportLength = sizeof(reportDescriptor);
       return reportDescriptor;
 }
-
-

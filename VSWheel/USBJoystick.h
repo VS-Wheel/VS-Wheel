@@ -140,8 +140,9 @@ class USBJoystick: public USBHID {
          * @returns true if there is no error, false otherwise
          */
          bool update(int16_t x, int16_t y, uint32_t button, int8_t throttle, int8_t brake, int8_t clutch);
-        
-         
+
+
+         bool retrieveFFBData();
          
          /*
          * To define the report descriptor. Warning: this method has to store the length of the report descriptor in reportLength.
@@ -158,8 +159,11 @@ class USBJoystick: public USBHID {
          int8_t _brake;
          int8_t _clutch;
          uint32_t _button;
-         
-         
+
+         unsigned char test[64];
+
+         HID_REPORT dat;
+
          void _init();                 
 };
 

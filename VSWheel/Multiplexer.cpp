@@ -7,7 +7,7 @@
 
 AnalogIn sig(P1_31);
 
-DigitalOut s0(P1_31);		// Signal 0 on the 4067
+DigitalOut s0(P2_8);		// Signal 0 on the 4067
 DigitalOut s1(P2_10);		// Signal 1 on the 4067
 DigitalOut s2(P2_11);		// Signal 2 on the 4067
 DigitalOut s3(P2_12);		// Signal 3 on the 4067

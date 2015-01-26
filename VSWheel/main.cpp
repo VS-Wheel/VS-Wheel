@@ -16,6 +16,8 @@ DigitalOut led_2(P0_22);
 DigitalOut dir1(P2_6);
 DigitalOut dir2(P2_7);
 
+Serial serial(P0_0, P0_1); // tx rx
+
 BusIn busButtons(
     P0_9, P0_8, P0_7, P0_6
 );
@@ -40,6 +42,7 @@ void led2_thread(void const *args) {
             dir2 = 1;
             break;
         }
+        //serial.printf("Hello World");
         Thread::wait(100);
     }
 }
@@ -66,6 +69,8 @@ void joy_thread(void const *args) {
     int32_t angle = 0;
     uint32_t button = 0;
 
+    //joystick.update(x, y, button, throttle, brake, clutch);
+
     while (true) {
         throttle = ped_getValue(pot1.read_u16()) & 0xFF; // value -127 .. 128
         brake = ped_getValue(pot2.read_u16()) & 0xFF; // value -127 .. 128
@@ -78,6 +83,10 @@ void joy_thread(void const *args) {
         x = (rotEnc.getPulses() * 682) & 0xFFFF;
 
         joystick.update(x, y, button, throttle, brake, clutch);
+        joystick.retrieveFFBData();
+
+        //serial.printf("%d\n\r", requestButtonState(CH9));
+        Thread::wait(1);
     }
 }
 
