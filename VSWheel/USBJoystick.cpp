@@ -20,93 +20,102 @@
 #include "stdint.h"
 #include "USBJoystick.h"
 
-bool USBJoystick::update(int16_t x, int16_t y, uint32_t button, int8_t throttle, int8_t brake, int8_t clutch) {
+Serial debug(P0_0, P0_1); // tx, rx
+
+HID_REPORT data;
+
+uint8_t test1, test2, test3;
+
+bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch) {
              HID_REPORT report;
-   _x = x;
-   _y = y;
-   _button = button;     
-   _throttle = throttle;
-   _brake = brake;
-   _clutch = clutch;
+   x_ = x;
+   y_ = y;
+   buttons_ = buttons;     
+   throttle_ = throttle;
+   brake_ = brake;
+   clutch_ = clutch;
 
-   /*
-   if(dat.length > 0)
-   {
-    for(int y=0;y<dat.length;y++)
-    {
-      test[y] = dat.data[y];
-    }
-       _button = test[0] + (test[1] << 8) + (test[2] << 16) + (test[3] << 24);
-      
-       _button = dat.length;
-      _button = dat.data[0] + (dat.data[1] << 8) + (dat.data[2] << 16) + (dat.data[3] << 24);
-   }*/
-
-   // Fill the report according to the Joystick Descriptor
-   
    report.data[0] = 0x01;   // Report ID 1
-   report.data[1] = _throttle;
-   report.data[2] = _brake;
-   report.data[3] = _clutch;            
-   report.data[4] = _x & 0xff; 
-   report.data[5] = _x >> 8;           
-   report.data[6] = _y & 0xff;
-   report.data[7] = _y >> 8;            
-   report.data[8] = _button & 0xff;
-   report.data[9] = _button >> 8;                                                                         
-   report.data[10] = _button >> 16;
-   report.data[11] = _button >> 24;
-   report.length = 12; 
+   report.data[1] = throttle_;
+   report.data[2] = brake_;
+   report.data[3] = clutch_;            
+   report.data[4] = x_ & 0xff; 
+   report.data[5] = x_ >> 8;           
+   report.data[6] = y_ & 0xff;
+   report.data[7] = y_ >> 8;            
+   report.data[8] = buttons_ & 0xff;
+   report.data[9] = buttons_ >> 8;                                                                         
+   report.data[10] = buttons_ >> 16;
+   report.data[11] = buttons_ >> 24;
+
+   report.length = 12;
 
    return send(&report);
 }
 
 bool USBJoystick::retrieveFFBData() {
-             HID_REPORT data;
-   return readNB(&data);
-}
+   HID_REPORT rep;
+   //readNB(&data);
+   //debug.baud(115200);
+   if(readNB(&data) == true)
+   {
+      for(int i=0;data.length;i++)
+      {
+        debug.printf("%h \n\r", data.data[i]);
 
+
+   /*if(data.data[i] == 0x0A)
+   {
+      rep.data[0] = 0x0A;
+      rep.data[1] = test1;
+      rep.data[2] = test2;
+      rep.data[3] = test3;
+      rep.length = 4;
+      send(&rep); 
+   }*/
+      }
+   }
+   return true;
+}
 
 void USBJoystick::_init() {
 
-   _throttle = -127;
-   _brake = -127;
-   _clutch = -127;   
-   _x = 0;                       
-   _y = 0;     
-   _button = 0x00000000;    
-
-   /*
-   for(int i=0;i<64;i++)
-   {
-      test[i] = 0;
-   }
-   */
+   throttle_ = -127;
+   brake_ = -127;
+   clutch_ = -127;   
+   x_ = 0;                       
+   y_ = 0;     
+   buttons_ = 0x00000000;
 }
 
 
 uint8_t * USBJoystick::reportDesc() {    
          static uint8_t reportDescriptor[] = {
 
-  // Start of Joystick Inputs definition
-  0x05,0x01, // Usage Page (Generic Desktop)
+ 0x05,0x01, // Usage Page (Generic Desktop)
   0x15,0x00, // Logical Minimum (0)
   0x09,0x04, // Usage (Joystick)
   0xA1,0x01, // Collection (Application)
-
     0x05,0x02, // Usage Page (Simulation Controls)
     0x85,0x01, // Report ID (1)
     0x09,0xBB, // Usage (Throttle)
     0x09,0xC5, // Usage (Brake)
-    0x09,0xC6, // Usage (Clutch)
+    //0x09,0xC6, // Usage (Clutch)
     0x15,0x81, // Logical Minimum (-127)
     0x25,0x7F, // Logical Maximum (127)
     0x75,0x08, // Report Size (8)
-    0x95,0x03, // Report Count (3) - Because (Throttle, Brake, Clutch)
+    0x95,0x02, // Report Count (2) - Because (Throttle, Brake, Clutch)
     0x81,0x02, // Input (Data, Variable, Absolute)
     0x05,0x01, // Usage Page (Generic Desktop)
-    
     0x09,0x01, // Usage (Pointer)
+    0xA1,0x00, // Collection (Physical)
+      0x09,0x32, // Usage (Z)
+      0x15,0x81, // Logical Minimum (-127)
+      0x25,0x7F, // Logical Maximum (127)
+      0x75,0x08, // Report Size (8)
+      0x95,0x01, // Report Count (1)
+      0x81,0x02, // Input (Data, Variable, Absolute)
+    0xC0, // End Collection
     0xA1,0x00, // Collection (Physical)
       0x09,0x30, // Usage (X)
       0x09,0x31, // Usage (Y)
@@ -116,7 +125,6 @@ uint8_t * USBJoystick::reportDesc() {
       0x95,0x02, // Report Count (2)
       0x81,0x02, // Input (Data, Variable, Absolute)
     0xC0, // End Collection
-    
     0x05,0x09, // Usage Page (Button)
     0x19,0x00, // Usage Minimum (0) - Nothing pressed
     0x29,0x20, // Usage Maximum (32)
@@ -127,25 +135,28 @@ uint8_t * USBJoystick::reportDesc() {
     0x55,0x00, // Unit Exponent (0)
     0x65,0x00, // Unit (None)
     0x81,0x02, // Input (Data, Variable, Absolute)
-    // End of Joystick Inputs definition
 
-    /*
-    0x06,0x01,0xFF,   //    Usage Page Generic Desktop
-    0x09,0x49,        //    Usage Undefined
-    0x75,0x01,        //    Report Size 1
-    0x95,0x01,        //    Report Count 1
-    0x81,0x02,        //    Input (Variable)
-    0x75,0x07,        //    Report Size 7
-    0x81,0x03,        //    Input (Constant, Variable)
+  // Force feedback section taken from vJoy by Shaul Eizikovich (http://sourceforge.net/p/vjoystick/code/HEAD/tree/tags/2.1.5/RC5-050115/driver/sys/hidReportDescSingle.h)
+  /*********************** Force Feedback section Device 1 [Start] ***********************/
+  /*
+    Input
+    Collection Datalink (sub-collection)
+    Physical Interface (Usage: PID State report)
+    ID: 2
+    state report:   5X1bit
+    Padding:      3bit
+    PID Device Control: 1bit
+    Effect Block Index: 7bit  
+  */
     0x05,0x0F,        //    Usage Page Physical Interface
-    0x09,0x92,        //    Usage ES Playing
-    0xA1,0x02,        //    Collection Datalink
+    0x09,0x92,        //    Usage PID State report 
+    0xA1,0x02,        //    Collection Datalink (logical)
        0x85,0x02,    //    Report ID 2
-       0x09,0x9F,    //    Usage DS Device is Reset
-       0x09,0xA0,    //    Usage DS Device is Pause
-       0x09,0xA4,    //    Usage Actuator Power
-       0x09,0xA5,    //    Usage Undefined
-       0x09,0xA6,    //    Usage Undefined
+       0x09,0x9F,    //    Usage Device is Pause 
+       0x09,0xA0,    //    Usage Actuators Enabled
+       0x09,0xA4,    //    Usage Safety Switch
+       0x09,0xA5,    //    Usage Actuator Override Switch
+       0x09,0xA6,    //    Usage Actuator Power
        0x15,0x00,    //    Logical Minimum 0
        0x25,0x01,    //    Logical Maximum 1
        0x35,0x00,    //    Physical Minimum 0
@@ -155,7 +166,7 @@ uint8_t * USBJoystick::reportDesc() {
        0x81,0x02,    //    Input (Variable)
        0x95,0x03,    //    Report Count 3
        0x81,0x03,    //    Input (Constant, Variable)
-       0x09,0x94,    //    Usage PID Device Control
+       0x09,0x94,    //    Usage Effect Playing
        0x15,0x00,    //    Logical Minimum 0
        0x25,0x01,    //    Logical Maximum 1
        0x35,0x00,    //    Physical Minimum 0
@@ -171,14 +182,22 @@ uint8_t * USBJoystick::reportDesc() {
        0x75,0x07,    //    Report Size 7
        0x95,0x01,    //    Report Count 1
        0x81,0x02,    //    Input (Variable)
-    0xC0,     // End Collection
-    */
-
-    // Start Force Feedback definitions
-    0x05,0x0F,    // Usage Page Physical Interface
+    0xC0    ,    // End Collection
+  
+  /*
+    Output
+    Collection  Datalink:
+    Usage Set Effect Report
     
+    ID:1
+    Effect Block Index: 8bit
+    
+    subcollection Effect Type
+    12 effect types, 8bit each
+    
+  */
     0x09,0x21,    //    Usage Set Effect Report
-    0xA1,0x02,    //    Collection Datalink
+    0xA1,0x02,    //    Collection Datalink (Logical)
        0x85,0x01,    //    Report ID 1
        0x09,0x22,    //    Usage Effect Block Index
        0x15,0x01,    //    Logical Minimum 1
@@ -210,7 +229,6 @@ uint8_t * USBJoystick::reportDesc() {
           0x95,0x01,    //    Report Count 1
           0x91,0x00,    //    Output
        0xC0    ,          //    End Collection
-
        0x09,0x50,         //    Usage Duration
        0x09,0x54,         //    Usage Trigger Repeat Interval
        0x09,0x51,         //    Usage Sample Period
@@ -241,8 +259,9 @@ uint8_t * USBJoystick::reportDesc() {
        0x75,0x08,         //    Report Size 8
        0x95,0x01,         //    Report Count 1
        0x91,0x02,         //    Output (Variable)
-       0x09,0x55,         //    Usage Axes Enable
-       0xA1,0x02,         //    Collection Datalink
+
+       0x09,0x55,       //    Usage Axes Enable
+       0xA1,0x02,       //    Collection Datalink
           0x05,0x01,    //    Usage Page Generic Desktop
           0x09,0x30,    //    Usage X
           0x09,0x31,    //    Usage Y
@@ -252,12 +271,14 @@ uint8_t * USBJoystick::reportDesc() {
           0x95,0x02,    //    Report Count 2
           0x91,0x02,    //    Output (Variable)
        0xC0     ,    // End Collection
+
        0x05,0x0F,    //    Usage Page Physical Interface
        0x09,0x56,    //    Usage Direction Enable
        0x95,0x01,    //    Report Count 1
        0x91,0x02,    //    Output (Variable)
        0x95,0x05,    //    Report Count 5
        0x91,0x03,    //    Output (Constant, Variable)
+
        0x09,0x57,    //    Usage Direction
        0xA1,0x02,    //    Collection Datalink
           0x0B,0x01,0x00,0x0A,0x00,    //    Usage Ordinals: Instance 1
@@ -274,25 +295,21 @@ uint8_t * USBJoystick::reportDesc() {
           0x91,0x02,                   //    Output (Variable)
           0x55,0x00,                   //    Unit Exponent 0
           0x66,0x00,0x00,              //    Unit 0
-       0xC0     ,         //    End Collection
-       0x05,0x0F,         //    Usage Page Physical Interface
-       0x09,0xA7,         //    Usage Undefined
-       0x66,0x03,0x10,    //    Unit 1003h (4099d)
-       0x55,0xFD,         //    Unit Exponent FDh (253d)
-       0x15,0x00,         //    Logical Minimum 0
-       0x26,0xFF,0x7F,    //    Logical Maximum 7FFFh (32767d)
-       0x35,0x00,         //    Physical Minimum 0
-       0x46,0xFF,0x7F,    //    Physical Maximum 7FFFh (32767d)
-       0x75,0x10,         //    Report Size 10h (16d)
-       0x95,0x01,         //    Report Count 1
-       0x91,0x02,         //    Output (Variable)
-       0x66,0x00,0x00,    //    Unit 0
-       0x55,0x00,         //    Unit Exponent 0
-    0xC0     ,    //    End Collection
+       0xC0,                           //    End Collection
 
+       0x05, 0x0F,        //     USAGE_PAGE (Physical Interface)
+       0x09, 0x58,        //     USAGE (Type Specific Block Offset)
+       0xA1, 0x02,        //     COLLECTION (Logical) 
+          0x0B, 0x01, 0x00, 0x0A, 0x00, //USAGE (Ordinals:Instance 1
+          0x0B, 0x02, 0x00, 0x0A, 0x00, //USAGE (Ordinals:Instance 2)
+          0x26, 0xFD, 0x7F, //   LOGICAL_MAXIMUM (32765) ; 32K RAM or ROM max.
+          0x75, 0x10,     //     REPORT_SIZE (16)
+          0x95, 0x02,     //     REPORT_COUNT (2)
+          0x91, 0x02,     //     OUTPUT (Data,Var,Abs)
+       0xC0,              //     END_COLLECTION
+    0xC0,                 //     END_COLLECTION
 
-    
-    0x05,0x0F,    //    Usage Page Physical Interface
+  // Envelope Report Definition
     0x09,0x5A,    //    Usage Set Envelope Report
     0xA1,0x02,    //    Collection Datalink
        0x85,0x02,         //    Report ID 2
@@ -337,9 +354,9 @@ uint8_t * USBJoystick::reportDesc() {
        0x91,0x02,    //    Output (Variable)
        0x09,0x23,    //    Usage Parameter Block Offset
        0x15,0x00,    //    Logical Minimum 0
-       0x25,0x01,    //    Logical Maximum 1
+       0x25,0x03,    //    Logical Maximum 3
        0x35,0x00,    //    Physical Minimum 0
-       0x45,0x01,    //    Physical Maximum 1
+       0x45,0x03,    //    Physical Maximum 3
        0x75,0x04,    //    Report Size 4
        0x95,0x01,    //    Report Count 1
        0x91,0x02,    //    Output (Variable)
@@ -424,7 +441,7 @@ uint8_t * USBJoystick::reportDesc() {
        0x66,0x00,0x00,              //    Unit 0
        0x55,0x00,                   //    Unit Exponent 0
     0xC0     ,    // End Collection
-    0x09,0x73,    //    Usage Set Constant Force Rep...
+    0x09,0x73,    //    Usage Set Constant Force Report
     0xA1,0x02,    //    Collection Datalink
        0x85,0x05,         //    Report ID 5
        0x09,0x22,         //    Usage Effect Block Index
@@ -465,7 +482,7 @@ uint8_t * USBJoystick::reportDesc() {
        0x95,0x02,         //    Report Count 2
        0x91,0x02,         //    Output (Variable)
     0xC0     ,    //    End Collection
-    0x09,0x68,    //    Usage Custom Force Data Rep...
+    0x09,0x68,    //    Usage Custom Force Data Report
     0xA1,0x02,    //    Collection Datalink
        0x85,0x07,         //    Report ID 7
        0x09,0x22,         //    Usage Effect Block Index
@@ -499,11 +516,11 @@ uint8_t * USBJoystick::reportDesc() {
        0x05,0x01,         //    Usage Page Generic Desktop
        0x09,0x30,         //    Usage X
        0x09,0x31,         //    Usage Y
-       0x15,0x00,         //    Logical Minimum 81h (0)
-       0x26,0xFF,0x7F,    //    Logical Maximum (32767d)
+       0x15,0x81,         //    Logical Minimum 81h (-127d)
+       0x25,0x7F,         //    Logical Maximum 7Fh (127d)
        0x35,0x00,         //    Physical Minimum 0
        0x46,0xFF,0x00,    //    Physical Maximum FFh (255d)
-       0x75,0x10,         //    Report Size 10h
+       0x75,0x08,         //    Report Size 8
        0x95,0x02,         //    Report Count 2
        0x91,0x02,         //    Output (Variable)
     0xC0     ,   //    End Collection
@@ -519,7 +536,7 @@ uint8_t * USBJoystick::reportDesc() {
        0x75,0x08,    //    Report Size 8
        0x95,0x01,    //    Report Count 1
        0x91,0x02,    //    Output (Variable)
-       0x09,0x78,    //    Usage Operation
+       0x09,0x78,    //    Usage Effect Operation
        0xA1,0x02,    //    Collection Datalink
           0x09,0x79,    //    Usage Op Effect Start
           0x09,0x7A,    //    Usage Op Effect Start Solo
@@ -537,7 +554,7 @@ uint8_t * USBJoystick::reportDesc() {
        0x46,0xFF,0x00,    //    Physical Maximum FFh (255d)
        0x91,0x02,         //    Output (Variable)
     0xC0     ,    //    End Collection
-    0x09,0x90,    //    Usage PID State Report
+    0x09,0x90,    //    Usage PID Block Free Report
     0xA1,0x02,    //    Collection Datalink
        0x85,0x0B,    //    Report ID Bh (11d)
        0x09,0x22,    //    Usage Effect Block Index
@@ -549,25 +566,25 @@ uint8_t * USBJoystick::reportDesc() {
        0x95,0x01,    //    Report Count 1
        0x91,0x02,    //    Output (Variable)
     0xC0     ,    //    End Collection
-    0x09,0x96,    //    Usage DC Disable Actuators
+    0x09,0x96,    //    Usage PID Device Control
     0xA1,0x02,    //    Collection Datalink
        0x85,0x0C,    //    Report ID Ch (12d)
-       0x09,0x97,    //    Usage DC Stop All Effects
-       0x09,0x98,    //    Usage DC Device Reset
-       0x09,0x99,    //    Usage DC Device Pause
-       0x09,0x9A,    //    Usage DC Device Continue
-       0x09,0x9B,    //    Usage PID Device State
-       0x09,0x9C,    //    Usage DS Actuators Enabled
+       0x09,0x97,    //    Usage DC Enable Actuators
+       0x09,0x98,    //    Usage DC Disable Actuators
+       0x09,0x99,    //    Usage DC Stop All Effects
+       0x09,0x9A,    //    Usage DC Device Reset
+       0x09,0x9B,    //    Usage DC Device Pause
+       0x09,0x9C,    //    Usage DC Device Continue
        0x15,0x01,    //    Logical Minimum 1
        0x25,0x06,    //    Logical Maximum 6
        0x75,0x08,    //    Report Size 8
        0x95,0x01,    //    Report Count 1
        0x91,0x00,    //    Output
     0xC0     ,    //    End Collection
-    0x09,0x7D,    //    Usage PID Pool Report
+    0x09,0x7D,    //    Usage Device Gain Report
     0xA1,0x02,    //    Collection Datalink
        0x85,0x0D,         //    Report ID Dh (13d)
-       0x09,0x7E,         //    Usage RAM Pool Size
+       0x09,0x7E,         //    Usage Device Gain
        0x15,0x00,         //    Logical Minimum 0
        0x26,0xFF,0x00,    //    Logical Maximum FFh (255d)
        0x35,0x00,         //    Physical Minimum 0
@@ -608,7 +625,7 @@ uint8_t * USBJoystick::reportDesc() {
        0x55,0x00,         //    Unit Exponent 0
        0x66,0x00,0x00,    //    Unit 0
     0xC0     ,    //    End Collection
-    0x09,0xAB,    //    Usage Undefined
+    0x09,0xAB,    //    Usage Create New Effect Report
     0xA1,0x02,    //    Collection Datalink
        0x85,0x01,    //    Report ID 1
        0x09,0x25,    //    Usage Effect Type
@@ -634,7 +651,7 @@ uint8_t * USBJoystick::reportDesc() {
        0xB1,0x00,    //    Feature
     0xC0     ,    // End Collection
     0x05,0x01,         //    Usage Page Generic Desktop
-    0x09,0x3B,         //    Usage Byte Count
+    0x09,0x3B,         //    Usage Reserved
     0x15,0x00,         //    Logical Minimum 0
     0x26,0xFF,0x01,    //    Logical Maximum 1FFh (511d)
     0x35,0x00,         //    Physical Minimum 0
@@ -646,7 +663,7 @@ uint8_t * USBJoystick::reportDesc() {
     0xB1,0x01,         //    Feature (Constant)
  0xC0     ,    //    End Collection
  0x05,0x0F,    //    Usage Page Physical Interface
- 0x09,0x89,    //    Usage Block Load Status
+ 0x09,0x89,    //    Usage Block Load Report
  0xA1,0x02,    //    Collection Datalink
     0x85,0x02,    //    Report ID 2
     0x09,0x22,    //    Usage Effect Block Index
@@ -657,11 +674,11 @@ uint8_t * USBJoystick::reportDesc() {
     0x75,0x08,    //    Report Size 8
     0x95,0x01,    //    Report Count 1
     0xB1,0x02,    //    Feature (Variable)
-    0x09,0x8B,    //    Usage Block Load Full
+    0x09,0x8B,    //    Usage Block Load Status
     0xA1,0x02,    //    Collection Datalink
-       0x09,0x8C,    //    Usage Block Load Error
-       0x09,0x8D,    //    Usage Block Handle
-       0x09,0x8E,    //    Usage PID Block Free Report
+       0x09,0x8C,    //    Usage Block Load Success
+       0x09,0x8D,    //    Usage Block Load Full
+       0x09,0x8E,    //    Usage Block Load Error
        0x25,0x03,    //    Logical Maximum 3
        0x15,0x01,    //    Logical Minimum 1
        0x35,0x01,    //    Physical Minimum 1
@@ -679,10 +696,10 @@ uint8_t * USBJoystick::reportDesc() {
     0x95,0x01,                   //    Report Count 1
     0xB1,0x00,                   //    Feature
  0xC0     ,    //    End Collection
- 0x09,0x7F,    //    Usage ROM Pool Size
+ 0x09,0x7F,    //    Usage PID Pool Report
  0xA1,0x02,    //    Collection Datalink
     0x85,0x03,                   //    Report ID 3
-    0x09,0x80,                   //    Usage ROM Effect Block Count
+    0x09,0x80,                   //    Usage RAM Pool size
     0x75,0x10,                   //    Report Size 10h (16d)
     0x95,0x01,                   //    Report Count 1
     0x15,0x00,                   //    Logical Minimum 0
@@ -690,14 +707,14 @@ uint8_t * USBJoystick::reportDesc() {
     0x27,0xFF,0xFF,0x00,0x00,    //    Logical Maximum FFFFh (65535d)
     0x47,0xFF,0xFF,0x00,0x00,    //    Physical Maximum FFFFh (65535d)
     0xB1,0x02,                   //    Feature (Variable)
-    0x09,0x83,                   //    Usage PID Pool Move Report
+    0x09,0x83,                   //    Usage Simultaneous Effects Max
     0x26,0xFF,0x00,              //    Logical Maximum FFh (255d)
     0x46,0xFF,0x00,              //    Physical Maximum FFh (255d)
     0x75,0x08,                   //    Report Size 8
     0x95,0x01,                   //    Report Count 1
     0xB1,0x02,                   //    Feature (Variable)
-    0x09,0xA9,                   //    Usage Undefined
-    0x09,0xAA,                   //    Usage Undefined
+    0x09,0xA9,                   //    Usage Device Managed Pool
+    0x09,0xAA,                   //    Usage Shared Parameter Blocks
     0x75,0x01,                   //    Report Size 1
     0x95,0x02,                   //    Report Count 2
     0x15,0x00,                   //    Logical Minimum 0
@@ -709,8 +726,9 @@ uint8_t * USBJoystick::reportDesc() {
     0x95,0x01,                   //    Report Count 1
     0xB1,0x03,                   //    Feature (Constant, Variable)
     0xC0,    //    End Collection
- 0xC0    //    End Collection
- 
+  /*********************** Force Feedback section Device 1 [end] ***********************/
+  0xC0    //    End Collection
+
         };
       reportLength = sizeof(reportDescriptor);
       return reportDescriptor;

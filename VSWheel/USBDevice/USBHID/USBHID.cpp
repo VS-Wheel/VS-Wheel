@@ -168,7 +168,7 @@ bool USBHID::USBCallback_setConfiguration(uint8_t configuration) {
     addEndpoint(EPINT_IN, MAX_PACKET_SIZE_EPINT);
     addEndpoint(EPINT_OUT, MAX_PACKET_SIZE_EPINT);
 
-    // We activate the endpoint to be able to recceive data
+    // We activate the endpoint to be able to receive data
     readStart(EPINT_OUT, MAX_PACKET_SIZE_EPINT);
     return true;
 }

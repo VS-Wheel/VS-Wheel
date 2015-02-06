@@ -139,7 +139,7 @@ class USBJoystick: public USBHID {
          * @param hat hat state 0 (up), 1 (right, 2 (down), 3 (left) or 4 (neutral)
          * @returns true if there is no error, false otherwise
          */
-         bool update(int16_t x, int16_t y, uint32_t button, int8_t throttle, int8_t brake, int8_t clutch);
+         bool update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch);
 
 
          bool retrieveFFBData();
@@ -153,16 +153,12 @@ class USBJoystick: public USBHID {
 
      private:
         //very important           
-         int16_t _x;                       
-         int16_t _y;     
-         int8_t _throttle;
-         int8_t _brake;
-         int8_t _clutch;
-         uint32_t _button;
-
-         unsigned char test[64];
-
-         HID_REPORT dat;
+         int16_t x_;                       
+         int16_t y_;     
+         int8_t throttle_;
+         int8_t brake_;
+         int8_t clutch_;
+         uint32_t buttons_;
 
          void _init();                 
 };

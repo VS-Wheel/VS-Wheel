@@ -1,49 +1,30 @@
 #include "mbed.h"
-#include "USBJoystick.h"
-#include "Inputs.h"
-#include "Multiplexer.h"
-#include "Motors.h"
-#include "QEI.h"
 #include "rtos.h"
-
-
-//USBMouse mouse;
-//USBJoystick joystick;
-//ROTARY obj
+#include "Inputs.h"
+#include "Motors.h"
 
 // Variables for Heartbeat and Status monitoring
 DigitalOut led_2(P0_22);
 DigitalOut dir1(P2_6);
 DigitalOut dir2(P2_7);
 
-Serial serial(P0_0, P0_1); // tx rx
-
-BusIn busButtons(
-    P0_9, P0_8, P0_7, P0_6
-);
+//Serial serial(P0_0, P0_1); // tx rx
 
 PwmOut pwm1(P2_5);
 
-AnalogIn pot1(P0_23);
-AnalogIn pot2(P0_24);
-AnalogIn pot3(P0_25);
-
 void led2_thread(void const *args) {
+    int i;
     while (true) {
-        led_2 = !led_2;
-        switch(busButtons)
+        for(i=1;i<4;i++)
         {
-            case 0x01:
-            dir1 = 1;
-            dir2 = 0;
-            break;
-            case 0x02:
-            dir1 = 0;
-            dir2 = 1;
-            break;
+            led_2 = !led_2;
+            Thread::wait(i*30);
         }
-        //serial.printf("Hello World");
-        Thread::wait(100);
+        for(i=1;i<4;i++)
+        {
+            led_2 = !led_2;
+            Thread::wait(i*100);
+        }
     }
 }
 
@@ -55,36 +36,13 @@ void motors_thread(void const *args) {
 }
 
 void joy_thread(void const *args) {
-    USBJoystick joystick; // Joystick obj (The whole setup)
-    QEI rotEnc(P0_27, P0_28, NC, 48, QEI::X4_ENCODING); // Rotary encoder obj (Physical Wheel)
+    INPUTS inputs; // Joystick obj (The whole setup)
+    USBJoystick joystick;
 
-    busButtons.mode(OpenDrain); // Kind of internal resistor on the bus
-
-    int8_t throttle = 0;
-    int8_t brake = 0;
-    int8_t clutch = 0;
-    int16_t x = 0;
-    int16_t y = 0;
-    int32_t radius = 120;
-    int32_t angle = 0;
-    uint32_t button = 0;
-
-    //joystick.update(x, y, button, throttle, brake, clutch);
-
+    inputs.init(&joystick);
     while (true) {
-        throttle = ped_getValue(pot1.read_u16()) & 0xFF; // value -127 .. 128
-        brake = ped_getValue(pot2.read_u16()) & 0xFF; // value -127 .. 128
-        clutch = ped_getValue(pot3.read_u16()) & 0xFF; // value -127 .. 128
-
-        // Reading button values          
-        button = busButtons.read() & 0xFFFFFFFF;     
-        //y = pot1.read_u16() & 0xFFFF;
-        y = 0;
-        x = (rotEnc.getPulses() * 682) & 0xFFFF;
-
-        joystick.update(x, y, button, throttle, brake, clutch);
+        inputs.send();
         joystick.retrieveFFBData();
-
         //serial.printf("%d\n\r", requestButtonState(CH9));
         Thread::wait(1);
     }

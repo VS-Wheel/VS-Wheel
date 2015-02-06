@@ -3,4 +3,12 @@
 
 #include "mbed.h"
 
+
+class MOTORS {
+   public:   		
+   		
+   private:
+   		
+};
+
 #endif
