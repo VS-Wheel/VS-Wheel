@@ -21,12 +21,12 @@ How to compile and run our code
 
 -> You should now have finished setting up our programming environment and should be able to compile/boot/flash by opening a command prompt in the 'VSWheel' folder and running the 'make' command to build, the 'boot' command to initialize the LPC and the 'flash' command to program. Enjoy!
 
+======
 Commands:
 - clean
 - make
 - boot
 - flash
-======
 
 We use:
 - Windows 8.1
