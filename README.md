@@ -11,7 +11,7 @@ How to compile and run our code
 
 2) Download and install GCC ARM Embedded using the .exe 'https://launchpad.net/gcc-arm-embedded' - And don't forget to check 'Add to PATH' at the end of the installation.
 
-3) In the root of our repo you will have a folder named 'make-tool'. Simply copy all the files from the folder to the 'GNU Tools ARM Embedded\4.8 2014q3\bin'. Your version might differ from ours, but it's still the same procedure. (The files were taken from mingw32, however 'mingw32-make.exe' was renamed to 'make.exe' to simplify running the program.)
+3) In the root of our repo you will have a folder named 'make-tool'. Simply copy all the files from the folder to the 'GNU Tools ARM Embedded\4.8 2014q3\bin'. Your version might differ from ours, but it's still the same procedure. (The files were taken from mingw32, however 'mingw32-make.exe' was renamed to 'make.exe' to simplify the compiling process.)
 
 4) Download and install the latest LPCXpresso IDE 'http://www.lpcware.com/lpcxpresso/downloads/windows'. After installing, activate the free version of the program [Launch LPCXpresso -> Help -> Activate -> Create serial number and register (Free Edition)]. You might need to create an account on their website to do this.
 
@@ -26,7 +26,6 @@ Commands:
 - make
 - boot
 - flash
-
 ======
 
 We use:
