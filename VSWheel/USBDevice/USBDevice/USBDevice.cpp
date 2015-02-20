@@ -39,7 +39,6 @@
 #define WINDEX_TO_PHYSICAL(endpoint) (((endpoint & 0x0f) << 1) + \
     ((endpoint & 0x80) ? 1 : 0))
 
-
 bool USBDevice::requestGetDescriptor(void)
 {
     bool success = false;

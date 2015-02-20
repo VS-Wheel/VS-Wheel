@@ -110,6 +110,29 @@ enum JOY_HAT {
  * @endcode
  */
 
+// Feature ID 1 (Create New Effect Report) 
+struct CreateNewEffect{
+    uint8_t reportID;
+    uint8_t effectType;
+    uint16_t byteCount;
+};
+
+// Feature ID 2 (Block Load Report)
+struct BlockLoadReport{
+    uint8_t reportID;
+    uint8_t blockIndex;
+    uint16_t status;
+    uint16_t byteCount;
+};
+
+// Feature ID 3 (PID Pool Report)
+struct PidPoolReport{
+    uint8_t reportID;
+    uint16_t ramPoolSize;
+    uint8_t simultaneousEffectMax;
+    uint8_t deviceManagedPool;
+    uint8_t sharedParameterBlock;
+};
 
 class USBJoystick: public USBHID {
    public:
@@ -161,6 +184,12 @@ class USBJoystick: public USBHID {
          uint32_t buttons_;
 
          void _init();                 
+         // Inherited / Overriden methods
+         bool USBCallback_request();
+         bool controlOut(void);
+         bool controlIn(void);
+         // Added functions
+         void extractDataIn(void); // Extract the data from the outputReport and place it in the right struct
 };
 
 #endif

@@ -24,7 +24,14 @@ Serial debug(P0_0, P0_1); // tx, rx
 
 HID_REPORT data;
 
+CreateNewEffect createNewEffect;
+BlockLoadReport blockLoadReport;
+PidPoolReport   pidPoolReport;
+
 uint8_t test1, test2, test3;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Joystick Inputs
 
 bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch) {
              HID_REPORT report;
@@ -54,15 +61,15 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle
 }
 
 bool USBJoystick::retrieveFFBData() {
-   HID_REPORT rep;
-   //readNB(&data);
+   //HID_REPORT rep;
+   readNB(&data);
    //debug.baud(115200);
-   if(readNB(&data) == true)
+   /*if(readNB(&data) == true)
    {
       for(int i=0;data.length;i++)
       {
         debug.printf("%h \n\r", data.data[i]);
-
+*/
 
    /*if(data.data[i] == 0x0A)
    {
@@ -73,10 +80,9 @@ bool USBJoystick::retrieveFFBData() {
       rep.length = 4;
       send(&rep); 
    }*/
-      }
-   }
+
    return true;
-}
+   }
 
 void USBJoystick::_init() {
 
@@ -88,6 +94,210 @@ void USBJoystick::_init() {
    buttons_ = 0x00000000;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Overidden methods
+
+// Called in ISR context
+// Called by USBDevice on Endpoint0 request
+// This is used to handle extensions to standard requests
+// and class specific requests
+// Return true if class handles this request
+bool USBJoystick::USBCallback_request() {
+    bool success = false;
+    CONTROL_TRANSFER * transfer = getTransferPtr();
+    uint8_t *hidDescriptor;
+
+    // Process additional standard requests
+
+    if ((transfer->setup.bmRequestType.Type == STANDARD_TYPE))
+    {
+        switch (transfer->setup.bRequest)
+        {
+            case GET_DESCRIPTOR:
+                switch (DESCRIPTOR_TYPE(transfer->setup.wValue))
+                {
+                    case REPORT_DESCRIPTOR:
+                        if ((reportDesc() != NULL) \
+                            && (reportDescLength() != 0))
+                        {
+                            transfer->remaining = reportDescLength();
+                            transfer->ptr = reportDesc();
+                            transfer->direction = DEVICE_TO_HOST;
+                            success = true;
+                        }
+                        break;
+                    case HID_DESCRIPTOR:
+                            // Find the HID descriptor, after the configuration descriptor
+                            hidDescriptor = findDescriptor(HID_DESCRIPTOR);
+                            if (hidDescriptor != NULL)
+                            {
+                                transfer->remaining = HID_DESCRIPTOR_LENGTH;
+                                transfer->ptr = hidDescriptor;
+                                transfer->direction = DEVICE_TO_HOST;
+                                success = true;
+                            }
+                            break;
+                     
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Process class-specific requests
+
+    if (transfer->setup.bmRequestType.Type == CLASS_TYPE)
+    {
+        switch (transfer->setup.bRequest)
+        {
+             case SET_REPORT:
+                    if(((transfer->setup.wValue >> 8) & 0xff) == 0x03);
+                    {
+                        outputReport.data[0] = transfer->setup.wValue & 0xff;
+                        outputReport.length = transfer->setup.wLength + 1;
+
+                        transfer->remaining = sizeof(outputReport.data) - 1;
+                        transfer->ptr = &outputReport.data[1];
+                        transfer->direction = HOST_TO_DEVICE;
+                        transfer->notify = true;
+                        success = true;
+                    }
+                break;
+             case GET_REPORT:
+                    if(((transfer->setup.wValue >> 8) & 0xff) == 0x03);
+                    {
+                        transfer->setup.wValue = outputReport.data[0] & 0xff;
+                        transfer->setup.wLength = outputReport.length;
+
+                        transfer->remaining = sizeof(inputReport.data) - 1;
+                        transfer->ptr = &inputReport.data[1]; // Not needed because we will be sending the struct requested
+                        transfer->direction = DEVICE_TO_HOST;
+                        transfer->notify = true;
+                        success = true;
+                    }
+                break;
+             default:
+                break;
+        }
+    }
+    return success;
+}
+
+bool USBJoystick::controlOut(void)
+{
+    /* Control transfer data OUT stage */
+    uint8_t buffer[MAX_PACKET_SIZE_EP0];
+    uint32_t packetSize;
+
+    /* Check we should be transferring data OUT */
+    if (transfer.direction != HOST_TO_DEVICE)
+    {
+        return false;
+    }
+
+    /* Read from endpoint */
+    packetSize = EP0getReadResult(buffer);
+
+    /* Check if transfer size is valid */
+    if (packetSize > transfer.remaining)
+    {
+        /* Too big */
+        return false;
+    }
+
+    /* Update transfer */
+    transfer.ptr += packetSize;
+    transfer.remaining -= packetSize;
+
+    /* Check if transfer has completed */
+    if (transfer.remaining == 0)
+    {
+        /* Transfer completed */
+        if (transfer.notify)
+        {
+            debug.printf("OUT\n\r");
+            /* Notify class layer. */
+            USBCallback_requestCompleted(buffer, packetSize);
+            transfer.notify = false;
+        }
+        /* Status stage */
+        EP0write(NULL, 0);
+    }
+    else
+    {
+        EP0read();
+    }
+    return true;
+}
+
+bool USBJoystick::controlIn(void)
+{
+    /* Control transfer data IN stage */
+    uint32_t packetSize;
+
+    /* Check if transfer has completed (status stage transactions */
+    /* also have transfer.remaining == 0) */
+    if (transfer.remaining == 0)
+    {
+        if (transfer.zlp)
+        {
+            /* Send zero length packet */
+            EP0write(NULL, 0);
+            transfer.zlp = false;
+        }
+
+        /* Transfer completed */
+        if (transfer.notify)
+        {
+            extractDataIn();
+            /* Notify class layer. */
+            USBCallback_requestCompleted(NULL, 0);
+            transfer.notify = false;
+        }
+
+        EP0read();
+
+        /* Completed */
+        return true;
+    }
+
+    /* Check we should be transferring data IN */
+    if (transfer.direction != DEVICE_TO_HOST)
+    {
+        return false;
+    }
+
+    packetSize = transfer.remaining;
+
+    if (packetSize > MAX_PACKET_SIZE_EP0)
+    {
+        packetSize = MAX_PACKET_SIZE_EP0;
+    }
+
+    /* Write to endpoint */
+    EP0write(transfer.ptr, packetSize);
+
+    /* Update transfer */
+    transfer.ptr += packetSize;
+    transfer.remaining -= packetSize;
+
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Joystick FFB Management
+
+// Extract the data from the outputReport and place it in the right struct
+void USBJoystick::extractDataIn(void)
+{
+    debug.printf("IN\n\r");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Report Descriptor
 
 uint8_t * USBJoystick::reportDesc() {    
          static uint8_t reportDescriptor[] = {

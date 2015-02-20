@@ -20,7 +20,6 @@
 #include "USBHAL.h"
 #include "USBHID.h"
 
-
 USBHID::USBHID(uint8_t output_report_length, uint8_t input_report_length, uint16_t vendor_id, uint16_t product_id, uint16_t product_release, bool connect): USBDevice(vendor_id, product_id, product_release)
 {
     output_length = output_report_length;
@@ -29,7 +28,6 @@ USBHID::USBHID(uint8_t output_report_length, uint8_t input_report_length, uint16
         USBDevice::connect();
     }
 }
-
 
 bool USBHID::send(HID_REPORT *report)
 {
@@ -70,8 +68,6 @@ uint16_t USBHID::reportDescLength() {
     reportDesc();
     return reportLength;
 }
-
-
 
 //
 //  Route callbacks from lower layers to class(es)
@@ -148,13 +144,11 @@ bool USBHID::USBCallback_request() {
                 break;
         }
     }
-
     return success;
 }
 
 
 #define DEFAULT_CONFIGURATION (1)
-
 
 // Called in ISR context
 // Set configuration. Return false if the

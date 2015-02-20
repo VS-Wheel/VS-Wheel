@@ -27,7 +27,6 @@
 #include "USBHID_Types.h"
 #include "USBDevice.h"
 
-
 /**
  * USBHID example
  * @code
@@ -61,7 +60,6 @@ public:
     * @param connect Connect the device
     */
     USBHID(uint8_t output_report_length = 64, uint8_t input_report_length = 64, uint16_t vendor_id = 0x1337, uint16_t product_id = 0x7331, uint16_t product_release = 0x0001, bool connect = true);
-
 
     /**
     * Send a Report. warning: blocking
@@ -163,10 +161,17 @@ protected:
     */
     virtual bool USBCallback_setConfiguration(uint8_t configuration);
 
-private:
+    virtual bool controlOut(void) = 0;
+    virtual bool controlIn(void) = 0;
+
     HID_REPORT outputReport;
+    HID_REPORT inputReport;
     uint8_t output_length;
     uint8_t input_length;
+
+private:
+    //HID_REPORT featureReport;
+    //uint8_t feature_length;
 };
 
 #endif

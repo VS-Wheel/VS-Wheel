@@ -20,7 +20,6 @@
 
 #include "USBHAL.h"
 
-
 // Get endpoint direction
 #define IN_EP(endpoint)     ((endpoint) & 1U ? true : false)
 #define OUT_EP(endpoint)    ((endpoint) & 1U ? false : true)

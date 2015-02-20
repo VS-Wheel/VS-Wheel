@@ -224,8 +224,6 @@ public:
     * @returns length of the report descriptor
     */
     virtual uint16_t reportDescLength() { return 0; };
-    
-
 
 protected:
     virtual void busReset(void);
@@ -241,11 +239,15 @@ protected:
     uint16_t PRODUCT_ID;
     uint16_t PRODUCT_RELEASE;
 
+    virtual bool controlOut(void);
+    virtual bool controlIn(void);
+    CONTROL_TRANSFER transfer;
+
 private:
     bool addRateFeedbackEndpoint(uint8_t endpoint, uint32_t maxPacket);
     bool requestGetDescriptor(void);
-    bool controlOut(void);
-    bool controlIn(void);
+    //bool controlOut(void);
+    //bool controlIn(void);
     bool requestSetAddress(void);
     bool requestSetConfiguration(void);
     bool requestSetFeature(void);
@@ -258,9 +260,9 @@ private:
     bool requestGetInterface(void);
     bool requestSetInterface(void);
 
-    CONTROL_TRANSFER transfer;
+    //CONTROL_TRANSFER transfer;
     USB_DEVICE device;
-    
+
     uint16_t currentInterface;
     uint8_t currentAlternate;
 };
