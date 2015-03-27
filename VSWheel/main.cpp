@@ -5,11 +5,12 @@
 
 // Variables for Heartbeat and Status monitoring
 DigitalOut led_2(P0_22);
-DigitalOut dir1(P2_6);
-DigitalOut dir2(P2_7);
+// PWM direction for motor 1
+//DigitalOut dir1(P2_6);
+// PWM direction for motor 2
+//DigitalOut dir2(P2_7);
 
-//Serial serial(P0_0, P0_1); // tx rx
-
+// PWM for motor 1
 PwmOut pwm1(P2_5);
 
 void led2_thread(void const *args) {
@@ -42,8 +43,7 @@ void joy_thread(void const *args) {
     inputs.init(&joystick);
     while (true) {
         inputs.send();
-        joystick.retrieveFFBData();
-        //serial.printf("%d\n\r", requestButtonState(CH9));
+        //joystick.retrieveFFBData();
         Thread::wait(1);
     }
 }
