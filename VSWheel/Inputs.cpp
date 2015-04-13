@@ -14,7 +14,6 @@
  *   Working OS: Windows 8.1, also works on Linux debian variants
  */
 
-#include "mbed.h"
 #include "Inputs.h"
 
 //g25 pedals potentiometers
@@ -93,9 +92,6 @@ void INPUTS::g25_readShifter(void)
 
     // Shifter state
     int shift=NO_SHIFT;
-
-    int xShifter = 0;
-    int yShifter = 0;
     int mode=SHIFTER_MODE;
 
     // Reading of button states from G25 shift register
@@ -182,7 +178,6 @@ void INPUTS::setVirtualButtons(int16_t gear, int btns[16])
     // Release virtual buttons for all gears and buttons
     buttons_ = 0;
 
-
     // Press virtual button for current gear
     // H-Shifter
     if(gear > 0 && gear <= 6)
@@ -223,9 +218,10 @@ void INPUTS::g25_readWheel(void)
 {
   // getPulses() returns the number of pulses acquired
   // Casting the value into int16_t, because the host is expecting an int16_t
-  // 3.42214 = 32767 / the maximum value of the wheel (in our case 9575, using X4_Encoding).
-  // In other words, zero for the right side and 9575 for the left side,
-  x_ = (int16_t)((rotEnc.getPulses() * ROTENC_MULTIPLIER * -1) + ROTENC_MAX_VALUE);
+  // multiplier = 32767 / difference between the left and right extremities  (in our case it's read dynamically, using X4_Encoding).
+  // In other words, zero for one side and the max value for the other side
+
+  x_ = (int16_t)(((rotEnc.getPulses() - offsetXAxis_) * multiplier_ * -1) + ROTENC_MAX_VALUE);
 
   // The if conditions must be in that order, to be able to catch the upper limit
   if(x_ < 0 && x_ < (-1 * ROTENC_CENTER)) x_ = ROTENC_MAX_VALUE;
@@ -241,4 +237,30 @@ void INPUTS::g25_readWheel(void)
 uint8_t INPUTS::ped_getValue(uint16_t value)
 {   
     return ((value / PEDDIV) - PEDZERO);
+}
+
+int16_t INPUTS::get_XAxis(void)
+{
+  return x_;
+}
+
+int16_t INPUTS::get_encPulses(void)
+{
+  return rotEnc.getPulses();
+}
+
+void INPUTS::set_multiplier(float difLR)
+{
+  multiplier_ = ROTENC_MAX_VALUE / difLR;
+}
+
+void INPUTS::set_offsetX(int16_t offX)
+{
+  offsetXAxis_ = offX;
+}
+
+void INPUTS::set_DEBUG(int16_t Y)
+{
+  y_ = Y;
+  joystick->update(x_, y_, buttons_, throttle_, brake_, clutch_);
 }

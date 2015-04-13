@@ -23,9 +23,7 @@
 #define ROTENC_ENCODING QEI::X4_ENCODING    // X2 encoding = looks at the state every time a rising or falling edge occurs on channel A
                                             // X4 encoding = looks at the state every time a rising or falling edge occurs on channel A or channel B
 #define ROTENC_MAX_VALUE	32767
-#define ROTENC_CENTER		16383
-#define	ROTENC_RESOLUTION	9575		
-#define ROTENC_MULTIPLIER	3.42214 		// 3.42214 = 32767 / the maximum value of the wheel (in our case 9575, using X4_Encoding).
+#define ROTENC_CENTER		16383	
 
 #define PAD_SHIFT_LEFT		P0_0
 #define PAD_SHIFT_RIGHT		P0_1
@@ -82,6 +80,13 @@ class INPUTS {
 	 * comparing the last values to the new values. Then it sends the data to joystick.update()
 	 */
 		void send(void); // Send wheel inputs to the PC
+
+		int16_t get_XAxis(void);
+		int16_t get_encPulses(void);
+
+		void set_offsetX(int16_t offX);
+		void set_multiplier(float difLR);
+		void set_DEBUG(int16_t Y);
 		
    private:
 		/** Global class variable for the throttle */
@@ -94,7 +99,7 @@ class INPUTS {
 		int16_t x_;
 		/** Global class variable for the Y axis */
 		int16_t y_;
-		/** Global class variable for all the buttons use for the wheel */
+		/** Global class variable for all the buttons used for the wheel */
 		uint32_t buttons_;
 
    		/** Global class variable for the previous value of the throttle */
@@ -107,10 +112,13 @@ class INPUTS {
 		int16_t prevX_;
 		/** Global class variable for the previous value of the Y axis */
 		int16_t prevY_;
-		/** Global class variable for the previous value of all the buttons use for the wheel */
+		/** Global class variable for the previous values of all the buttons used for the wheel */
 		uint32_t prevButtons_;
 
-		
+		/** Global class variable for the multiplier value of the wheel */
+		float multiplier_;
+		/** Global class variable for the offset on the X Axis */
+		int16_t offsetXAxis_;
         
     /**
 	 * @brief After the g25 shifter reads the buttons and the shifter axes, this function is called to setup
