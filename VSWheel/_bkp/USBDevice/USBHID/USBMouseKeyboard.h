@@ -16,115 +16,80 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef USBMOUSE_H
-#define USBMOUSE_H
+#ifndef USBMOUSEKEYBOARD_H
+#define USBMOUSEKEYBOARD_H
 
+#define REPORT_ID_KEYBOARD 1
+#define REPORT_ID_MOUSE 2
+#define REPORT_ID_VOLUME 3
+
+#include "USBMouse.h"
+#include "USBKeyboard.h"
+#include "Stream.h"
 #include "USBHID.h"
 
-#define REPORT_ID_MOUSE   2
-
-/* Common usage */
-
-enum MOUSE_BUTTON
-{
-    MOUSE_LEFT = 1,
-    MOUSE_RIGHT = 2,
-    MOUSE_MIDDLE = 4,
-};
-
-/* X and Y limits */
-/* These values do not directly map to screen pixels */
-/* Zero may be interpreted as meaning 'no movement' */
-#define X_MIN_ABS    (1)        /*!< Minimum value on x-axis */
-#define Y_MIN_ABS    (1)        /*!< Minimum value on y-axis */
-#define X_MAX_ABS    (0x7fff)   /*!< Maximum value on x-axis */
-#define Y_MAX_ABS    (0x7fff)   /*!< Maximum value on y-axis */
-
-#define X_MIN_REL    (-127)     /*!< The maximum value that we can move to the left on the x-axis */
-#define Y_MIN_REL    (-127)     /*!< The maximum value that we can move up on the y-axis */
-#define X_MAX_REL    (127)      /*!< The maximum value that we can move to the right on the x-axis */
-#define Y_MAX_REL    (127)      /*!< The maximum value that we can move down on the y-axis */
-
-enum MOUSE_TYPE
-{
-    ABS_MOUSE,
-    REL_MOUSE,
-};
-
-/**
- *
- * USBMouse example
+/** 
+ * USBMouseKeyboard example
  * @code
- * #include "mbed.h"
- * #include "USBMouse.h"
  *
- * USBMouse mouse;
+ * #include "mbed.h"
+ * #include "USBMouseKeyboard.h"
+ *
+ * USBMouseKeyboard key_mouse;
  *
  * int main(void)
  * {
- *   while (1)
+ *   while(1)
  *   {
- *      mouse.move(20, 0);
- *      wait(0.5);
+ *       key_mouse.move(20, 0);
+ *       key_mouse.printf("Hello From MBED\r\n");
+ *       wait(1);
  *   }
  * }
- *
  * @endcode
  *
  *
  * @code
- * #include "mbed.h"
- * #include "USBMouse.h"
- * #include <math.h>
  *
- * USBMouse mouse(ABS_MOUSE);
+ * #include "mbed.h"
+ * #include "USBMouseKeyboard.h"
+ *
+ * USBMouseKeyboard key_mouse(ABS_MOUSE);
  *
  * int main(void)
  * {
- *   uint16_t x_center = (X_MAX_ABS - X_MIN_ABS)/2;
- *   uint16_t y_center = (Y_MAX_ABS - Y_MIN_ABS)/2;
- *   uint16_t x_screen = 0;
- *   uint16_t y_screen = 0;
- *
- *   uint32_t x_origin = x_center;
- *   uint32_t y_origin = y_center;
- *   uint32_t radius = 5000;
- *   uint32_t angle = 0;
- *
- *   while (1)
+ *   while(1)
  *   {
- *       x_screen = x_origin + cos((double)angle*3.14/180.0)*radius;
- *       y_screen = y_origin + sin((double)angle*3.14/180.0)*radius;
- *
- *       mouse.move(x_screen, y_screen);
- *       angle += 3;
- *       wait(0.01);
+ *       key_mouse.move(X_MAX_ABS/2, Y_MAX_ABS/2);
+ *       key_mouse.printf("Hello from MBED\r\n");
+ *       wait(1);
  *   }
  * }
- *
  * @endcode
  */
-class USBMouse: public USBHID
+class USBMouseKeyboard: public USBHID, public Stream
 {
     public:
-
+    
         /**
         *   Constructor
         *
         * @param mouse_type Mouse type: ABS_MOUSE (absolute mouse) or REL_MOUSE (relative mouse) (default: REL_MOUSE)
+        * @param leds Leds bus: first: NUM_LOCK, second: CAPS_LOCK, third: SCROLL_LOCK
         * @param vendor_id Your vendor_id (default: 0x1234)
         * @param product_id Your product_id (default: 0x0001)
         * @param product_release Your preoduct_release (default: 0x0001)
         *
         */
-        USBMouse(MOUSE_TYPE mouse_type = REL_MOUSE, uint16_t vendor_id = 0x1234, uint16_t product_id = 0x0001, uint16_t product_release = 0x0001):
+        USBMouseKeyboard(MOUSE_TYPE mouse_type = REL_MOUSE, uint16_t vendor_id = 0x0021, uint16_t product_id = 0x0011, uint16_t product_release = 0x0001): 
             USBHID(0, 0, vendor_id, product_id, product_release, false)
             {
+                lock_status = 0;
                 button = 0;
                 this->mouse_type = mouse_type;
                 connect();
             };
-
+            
         /**
         * Write a state of the mouse
         *
@@ -135,17 +100,17 @@ class USBMouse: public USBHID
         * @returns true if there is no error, false otherwise
         */
         bool update(int16_t x, int16_t y, uint8_t buttons, int8_t z);
-
-
+        
+        
         /**
         * Move the cursor to (x, y)
         *
-        * @param x-axis position
-        * @param y-axis position
+        * @param x x-axis position
+        * @param y y-axis position
         * @returns true if there is no error, false otherwise
         */
         bool move(int16_t x, int16_t y);
-
+        
         /**
         * Press one or several buttons
         *
@@ -153,7 +118,7 @@ class USBMouse: public USBHID
         * @returns true if there is no error, false otherwise
         */
         bool press(uint8_t button);
-
+        
         /**
         * Release one or several buttons
         *
@@ -161,22 +126,22 @@ class USBMouse: public USBHID
         * @returns true if there is no error, false otherwise
         */
         bool release(uint8_t button);
-
+        
         /**
         * Double click (MOUSE_LEFT)
         *
         * @returns true if there is no error, false otherwise
         */
         bool doubleClick();
-
+        
         /**
         * Click
         *
         * @param button state of the buttons ( ex: clic(MOUSE_LEFT))
         * @returns true if there is no error, false otherwise
         */
-        bool click(uint8_t button);
-
+        bool click(uint8_t button); 
+        
         /**
         * Scrolling
         *
@@ -185,25 +150,71 @@ class USBMouse: public USBHID
         */
         bool scroll(int8_t z);
 
+        /**
+        * To send a character defined by a modifier(CTRL, SHIFT, ALT) and the key 
+        *
+        * @code
+        * //To send CTRL + s (save)
+        *  keyboard.keyCode('s', KEY_CTRL);
+        * @endcode
+        *
+        * @param modifier bit 0: KEY_CTRL, bit 1: KEY_SHIFT, bit 2: KEY_ALT (default: 0)
+        * @param key character to send
+        * @returns true if there is no error, false otherwise
+        */
+        bool keyCode(uint8_t key, uint8_t modifier = 0);
+        
+        /**
+        * Send a character
+        *
+        * @param c character to be sent
+        * @returns true if there is no error, false otherwise
+        */
+        virtual int _putc(int c);
+        
+        /**
+        * Control media keys
+        *
+        * @param key media key pressed (KEY_NEXT_TRACK, KEY_PREVIOUS_TRACK, KEY_STOP, KEY_PLAY_PAUSE, KEY_MUTE, KEY_VOLUME_UP, KEY_VOLUME_DOWN)
+        * @returns true if there is no error, false otherwise
+        */
+        bool mediaControl(MEDIA_KEY key);
+        
+        /**
+        * Read status of lock keys. Useful to switch-on/off leds according to key pressed. Only the first three bits of the result is important:
+        *   - First bit: NUM_LOCK
+        *   - Second bit: CAPS_LOCK
+        *   - Third bit: SCROLL_LOCK
+        *
+        * @returns status of lock keys
+        */
+        uint8_t lockStatus();
+        
         /*
         * To define the report descriptor. Warning: this method has to store the length of the report descriptor in reportLength.
         *
         * @returns pointer to the report descriptor
         */
         virtual uint8_t * reportDesc();
-
-    protected:
+        
         /*
-        * Get configuration descriptor
+        * Called when a data is received on the OUT endpoint. Useful to switch on LED of LOCK keys
         *
-        * @returns pointer to the configuration descriptor
+        * @returns if handle by subclass, return true
         */
-        virtual uint8_t * configurationDesc();
-
+        virtual bool EP1_OUT_callback();
+        
+        
     private:
+        bool mouseWrite(int8_t x, int8_t y, uint8_t buttons, int8_t z);
         MOUSE_TYPE mouse_type;
         uint8_t button;
         bool mouseSend(int8_t x, int8_t y, uint8_t buttons, int8_t z);
+        
+        uint8_t lock_status;
+        
+        //dummy otherwise it doesn't compile (we must define all methods of an abstract class)
+        virtual int _getc() { return -1;}
 };
 
 #endif

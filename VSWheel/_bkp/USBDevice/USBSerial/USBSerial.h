@@ -53,12 +53,9 @@ public:
     * @param vendor_id Your vendor_id (default: 0x1f00)
     * @param product_id Your product_id (default: 0x2012)
     * @param product_release Your preoduct_release (default: 0x0001)
-    * @param connect_blocking define if the connection must be blocked if USB not plugged in
     *
     */
-    USBSerial(uint16_t vendor_id = 0x1f00, uint16_t product_id = 0x2012, uint16_t product_release = 0x0001, bool connect_blocking = true): USBCDC(vendor_id, product_id, product_release, connect_blocking), buf(128){
-        settingsChangedCallback = 0;
-    };
+    USBSerial(uint16_t vendor_id = 0x1f00, uint16_t product_id = 0x2012, uint16_t product_release = 0x0001): USBCDC(vendor_id, product_id, product_release), buf(128){ };
 
 
     /**
@@ -68,39 +65,23 @@ public:
     * @returns true if there is no error, false otherwise
     */
     virtual int _putc(int c);
-
+    
     /**
     * Read a character: blocking
     *
     * @returns character read
     */
     virtual int _getc();
-
+    
     /**
     * Check the number of bytes available.
     *
     * @returns the number of bytes available
     */
-    uint8_t available();
-
-    /** Determine if there is a character available to read
-     *
-     *  @returns
-     *    1 if there is a character available to read,
-     *    0 otherwise
-     */
-    int readable() { return available() ? 1 : 0; }
-
-    /** Determine if there is space available to write a character
-     *
-     *  @returns
-     *    1 if there is space to write a character,
-     *    0 otherwise
-     */
-    int writeable() { return 1; } // always return 1, for write operation is blocking
-
+    uint8_t available(); 
+    
     /**
-    * Write a block of data.
+    * Write a block of data. 
     *
     * For more efficiency, a block of size 64 (maximum size of a bulk endpoint) has to be written.
     *
@@ -112,7 +93,7 @@ public:
     bool writeBlock(uint8_t * buf, uint16_t size);
 
     /**
-     *  Attach a member function to call when a packet is received.
+     *  Attach a member function to call when a packet is received. 
      *
      *  @param tptr pointer to the object to call the member function on
      *  @param mptr pointer to the member function to be called
@@ -129,33 +110,19 @@ public:
      *
      * @param fptr function pointer
      */
-    void attach(void (*fptr)(void)) {
-        if(fptr != NULL) {
-            rx.attach(fptr);
+    void attach(void (*fn)(void)) {
+        if(fn != NULL) {
+            rx.attach(fn);
         }
     }
 
-    /**
-     * Attach a callback to call when serial's settings are changed.
-     *
-     * @param fptr function pointer
-     */
-    void attach(void (*fptr)(int baud, int bits, int parity, int stop)) {
-        settingsChangedCallback = fptr;
-    }
 
 protected:
     virtual bool EP2_OUT_callback();
-    virtual void lineCodingChanged(int baud, int bits, int parity, int stop){
-        if (settingsChangedCallback) {
-            settingsChangedCallback(baud, bits, parity, stop);
-        }
-    }
 
 private:
     FunctionPointer rx;
     CircBuffer<uint8_t> buf;
-    void (*settingsChangedCallback)(int baud, int bits, int parity, int stop);
 };
 
 #endif

@@ -35,40 +35,39 @@ public:
     * @param vendor_id Your vendor_id
     * @param product_id Your product_id
     * @param product_release Your preoduct_release
-    * @param connect_blocking define if the connection must be blocked if USB not plugged in
     */
-    USBCDC(uint16_t vendor_id, uint16_t product_id, uint16_t product_release, bool connect_blocking);
+    USBCDC(uint16_t vendor_id, uint16_t product_id, uint16_t product_release);
 
 protected:
-
+    
     /*
     * Get device descriptor. Warning: this method has to store the length of the report descriptor in reportLength.
     *
     * @returns pointer to the device descriptor
     */
     virtual uint8_t * deviceDesc();
-
+    
     /*
     * Get string product descriptor
     *
     * @returns pointer to the string product descriptor
     */
     virtual uint8_t * stringIproductDesc();
-
+    
     /*
     * Get string interface descriptor
     *
     * @returns pointer to the string interface descriptor
     */
     virtual uint8_t * stringIinterfaceDesc();
-
+    
     /*
     * Get configuration descriptor
     *
     * @returns pointer to the configuration descriptor
     */
     virtual uint8_t * configurationDesc();
-
+    
     /*
     * Send a buffer
     *
@@ -78,7 +77,7 @@ protected:
     * @returns true if successful
     */
     bool send(uint8_t * buffer, uint32_t size);
-
+    
     /*
     * Read a buffer from a certain endpoint. Warning: blocking
     *
@@ -89,7 +88,7 @@ protected:
     * @returns true if successful
     */
     bool readEP(uint8_t * buffer, uint32_t * size);
-
+    
     /*
     * Read a buffer from a certain endpoint. Warning: non blocking
     *
@@ -101,22 +100,8 @@ protected:
     */
     bool readEP_NB(uint8_t * buffer, uint32_t * size);
 
-    /*
-    * Called by USBCallback_requestCompleted when CDC line coding is changed
-    * Warning: Called in ISR
-    *
-    * @param baud The baud rate
-    * @param bits The number of bits in a word (5-8)
-    * @param parity The parity
-    * @param stop The number of stop bits (1 or 2)
-    */
-    virtual void lineCodingChanged(int baud, int bits, int parity, int stop) {};
-
-protected:
     virtual bool USBCallback_request();
-    virtual void USBCallback_requestCompleted(uint8_t *buf, uint32_t length);
     virtual bool USBCallback_setConfiguration(uint8_t configuration);
-    volatile bool terminal_connected;
 
 };
 

@@ -16,52 +16,33 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "stdint.h"
-#include "USBSerial.h"
+#ifndef USBENDPOINTS_H
+#define USBENDPOINTS_H
 
-int USBSerial::_putc(int c) {
-    if (!terminal_connected)
-        return 0;
-    send((uint8_t *)&c, 1);
-    return 1;
-}
+/* SETUP packet size */
+#define SETUP_PACKET_SIZE (8)
 
-int USBSerial::_getc() {
-    uint8_t c = 0;
-    while (buf.isEmpty());
-    buf.dequeue(&c);
-    return c;
-}
+/* Options flags for configuring endpoints */
+#define DEFAULT_OPTIONS     (0)
+#define SINGLE_BUFFERED     (1U << 0)
+#define ISOCHRONOUS         (1U << 1)
+#define RATE_FEEDBACK_MODE  (1U << 2) /* Interrupt endpoints only */
 
+/* Endpoint transfer status, for endpoints > 0 */
+typedef enum {
+    EP_COMPLETED,   /* Transfer completed */
+    EP_PENDING,     /* Transfer in progress */
+    EP_INVALID,     /* Invalid parameter */
+    EP_STALLED,     /* Endpoint stalled */
+} EP_STATUS;
 
-bool USBSerial::writeBlock(uint8_t * buf, uint16_t size) {
-    if(size > MAX_PACKET_SIZE_EPBULK) {
-        return false;
-    }
-    if(!send(buf, size)) {
-        return false;
-    }
-    return true;
-}
+/* Include configuration for specific target */
+#if defined(TARGET_LPC1768) || defined(TARGET_LPC2368)
+#include "USBEndpoints_LPC17_LPC23.h"
+#elif defined(TARGET_LPC11U24)
+#include "USBEndpoints_LPC11U.h"
+#else
+#error "Unknown target type"
+#endif
 
-
-
-bool USBSerial::EP2_OUT_callback() {
-    uint8_t c[65];
-    uint32_t size = 0;
-
-    //we read the packet received and put it on the circular buffer
-    readEP(c, &size);
-    for (uint32_t i = 0; i < size; i++) {
-        buf.queue(c[i]);
-    }
-
-    //call a potential handler
-    rx.call();
-
-    return true;
-}
-
-uint8_t USBSerial::available() {
-    return buf.available();
-}
+#endif

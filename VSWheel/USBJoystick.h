@@ -8,48 +8,6 @@
 
 #include "USBHID.h"
 
-#define REPORT_ID_JOYSTICK  4
-
-/* Common usage */
-enum JOY_BUTTON {
-     JOY_B0 = 1,
-     JOY_B1 = 2,
-     JOY_B2 = 4,
-     JOY_B3 = 8,     
-};
-
-#if(0)
-enum JOY_HAT {
-     JOY_HAT_UP      = 0,
-     JOY_HAT_RIGHT   = 1,
-     JOY_HAT_DOWN    = 2,
-     JOY_HAT_LEFT    = 3,     
-     JOY_HAT_NEUTRAL = 4,          
-};
-#else
-enum JOY_HAT {
-     JOY_HAT_UP         = 0,     
-     JOY_HAT_UP_RIGHT   = 1,
-     JOY_HAT_RIGHT      = 2,
-     JOY_HAT_RIGHT_DOWN = 3,
-     JOY_HAT_DOWN       = 4,
-     JOY_HAT_DOWN_LEFT  = 5,     
-     JOY_HAT_LEFT       = 6,     
-     JOY_HAT_LEFT_UP    = 7,          
-     JOY_HAT_NEUTRAL    = 8,          
-};
-#endif
-
-/* X, Y and T limits */
-/* These values do not directly map to screen pixels */
-/* Zero may be interpreted as meaning 'no movement' */
-#define JX_MIN_ABS    (-127)     /*!< The maximum value that we can move to the left on the x-axis */
-#define JY_MIN_ABS    (-127)     /*!< The maximum value that we can move up on the y-axis */
-#define JT_MIN_ABS    (-127)     /*!< The minimum value for the throttle */
-#define JX_MAX_ABS    (127)      /*!< The maximum value that we can move to the right on the x-axis */
-#define JY_MAX_ABS    (127)      /*!< The maximum value that we can move down on the y-axis */
-#define JT_MAX_ABS    (127)      /*!< The maximum value for the throttle */
-
 /**
  *
  * USBJoystick example
@@ -110,7 +68,7 @@ enum JOY_HAT {
  * @endcode
  */
 
-// Feature ID 1 (Create New Effect Report) 
+// Feature ID 1 (Create New Effect Report)
 struct CreateNewEffect{
     uint8_t reportID;
     uint8_t effectType;
@@ -183,13 +141,9 @@ class USBJoystick: public USBHID {
          int8_t clutch_;
          uint32_t buttons_;
 
-         void _init();                 
-         // Inherited / Overriden methods
-         bool USBCallback_request();
-         bool controlOut(void);
-         bool controlIn(void);
+         void _init();
          // Added functions
-         void extractDataIn(void); // Extract the data from the outputReport and place it in the right struct
+         void extractDataOut(void); // Extract the data from the outputReport and place it in the right struct
 };
 
 #endif

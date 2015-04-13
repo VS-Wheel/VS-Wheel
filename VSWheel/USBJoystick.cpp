@@ -37,7 +37,7 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle
              HID_REPORT report;
    x_ = x;
    y_ = y;
-   buttons_ = buttons;     
+   buttons_ = buttons;
    throttle_ = throttle;
    brake_ = brake;
    clutch_ = clutch;
@@ -46,8 +46,8 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle
    report.data[1] = throttle_;
    report.data[2] = brake_;
    report.data[3] = clutch_;            
-   report.data[4] = x_ & 0xff; 
-   report.data[5] = x_ >> 8;           
+   report.data[4] = x_ & 0xff;
+   report.data[5] = x_ >> 8;         
    report.data[6] = y_ & 0xff;
    report.data[7] = y_ >> 8;            
    report.data[8] = buttons_ & 0xff;
@@ -78,7 +78,7 @@ bool USBJoystick::retrieveFFBData() {
       rep.data[2] = test2;
       rep.data[3] = test3;
       rep.length = 4;
-      send(&rep); 
+      send(&rep);
    }*/
 
    return true;
@@ -97,204 +97,15 @@ void USBJoystick::_init() {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Overidden methods
 
-// Called in ISR context
-// Called by USBDevice on Endpoint0 request
-// This is used to handle extensions to standard requests
-// and class specific requests
-// Return true if class handles this request
-bool USBJoystick::USBCallback_request() {
-    bool success = false;
-    CONTROL_TRANSFER * transfer = getTransferPtr();
-    uint8_t *hidDescriptor;
-
-    // Process additional standard requests
-
-    if ((transfer->setup.bmRequestType.Type == STANDARD_TYPE))
-    {
-        switch (transfer->setup.bRequest)
-        {
-            case GET_DESCRIPTOR:
-                switch (DESCRIPTOR_TYPE(transfer->setup.wValue))
-                {
-                    case REPORT_DESCRIPTOR:
-                        if ((reportDesc() != NULL) \
-                            && (reportDescLength() != 0))
-                        {
-                            transfer->remaining = reportDescLength();
-                            transfer->ptr = reportDesc();
-                            transfer->direction = DEVICE_TO_HOST;
-                            success = true;
-                        }
-                        break;
-                    case HID_DESCRIPTOR:
-                            // Find the HID descriptor, after the configuration descriptor
-                            hidDescriptor = findDescriptor(HID_DESCRIPTOR);
-                            if (hidDescriptor != NULL)
-                            {
-                                transfer->remaining = HID_DESCRIPTOR_LENGTH;
-                                transfer->ptr = hidDescriptor;
-                                transfer->direction = DEVICE_TO_HOST;
-                                success = true;
-                            }
-                            break;
-                     
-                    default:
-                        break;
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    // Process class-specific requests
-
-    if (transfer->setup.bmRequestType.Type == CLASS_TYPE)
-    {
-        switch (transfer->setup.bRequest)
-        {
-             case SET_REPORT:
-                    if(((transfer->setup.wValue >> 8) & 0xff) == 0x03);
-                    {
-                        outputReport.data[0] = transfer->setup.wValue & 0xff;
-                        outputReport.length = transfer->setup.wLength + 1;
-
-                        transfer->remaining = sizeof(outputReport.data) - 1;
-                        transfer->ptr = &outputReport.data[1];
-                        transfer->direction = HOST_TO_DEVICE;
-                        transfer->notify = true;
-                        success = true;
-                    }
-                break;
-             case GET_REPORT:
-                    if(((transfer->setup.wValue >> 8) & 0xff) == 0x03);
-                    {
-                        transfer->setup.wValue = outputReport.data[0] & 0xff;
-                        transfer->setup.wLength = outputReport.length;
-
-                        transfer->remaining = sizeof(inputReport.data) - 1;
-                        transfer->ptr = &inputReport.data[1]; // Not needed because we will be sending the struct requested
-                        transfer->direction = DEVICE_TO_HOST;
-                        transfer->notify = true;
-                        success = true;
-                    }
-                break;
-             default:
-                break;
-        }
-    }
-    return success;
-}
-
-bool USBJoystick::controlOut(void)
-{
-    /* Control transfer data OUT stage */
-    uint8_t buffer[MAX_PACKET_SIZE_EP0];
-    uint32_t packetSize;
-
-    /* Check we should be transferring data OUT */
-    if (transfer.direction != HOST_TO_DEVICE)
-    {
-        return false;
-    }
-
-    /* Read from endpoint */
-    packetSize = EP0getReadResult(buffer);
-
-    /* Check if transfer size is valid */
-    if (packetSize > transfer.remaining)
-    {
-        /* Too big */
-        return false;
-    }
-
-    /* Update transfer */
-    transfer.ptr += packetSize;
-    transfer.remaining -= packetSize;
-
-    /* Check if transfer has completed */
-    if (transfer.remaining == 0)
-    {
-        /* Transfer completed */
-        if (transfer.notify)
-        {
-            debug.printf("OUT\n\r");
-            /* Notify class layer. */
-            USBCallback_requestCompleted(buffer, packetSize);
-            transfer.notify = false;
-        }
-        /* Status stage */
-        EP0write(NULL, 0);
-    }
-    else
-    {
-        EP0read();
-    }
-    return true;
-}
-
-bool USBJoystick::controlIn(void)
-{
-    /* Control transfer data IN stage */
-    uint32_t packetSize;
-
-    /* Check if transfer has completed (status stage transactions */
-    /* also have transfer.remaining == 0) */
-    if (transfer.remaining == 0)
-    {
-        if (transfer.zlp)
-        {
-            /* Send zero length packet */
-            EP0write(NULL, 0);
-            transfer.zlp = false;
-        }
-
-        /* Transfer completed */
-        if (transfer.notify)
-        {
-            extractDataIn();
-            /* Notify class layer. */
-            USBCallback_requestCompleted(NULL, 0);
-            transfer.notify = false;
-        }
-
-        EP0read();
-
-        /* Completed */
-        return true;
-    }
-
-    /* Check we should be transferring data IN */
-    if (transfer.direction != DEVICE_TO_HOST)
-    {
-        return false;
-    }
-
-    packetSize = transfer.remaining;
-
-    if (packetSize > MAX_PACKET_SIZE_EP0)
-    {
-        packetSize = MAX_PACKET_SIZE_EP0;
-    }
-
-    /* Write to endpoint */
-    EP0write(transfer.ptr, packetSize);
-
-    /* Update transfer */
-    transfer.ptr += packetSize;
-    transfer.remaining -= packetSize;
-
-    return true;
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Joystick FFB Management
 
 // Extract the data from the outputReport and place it in the right struct
-void USBJoystick::extractDataIn(void)
+void USBJoystick::extractDataOut(void)
 {
-    debug.printf("IN\n\r");
+    
 }
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Report Descriptor
@@ -336,8 +147,8 @@ uint8_t * USBJoystick::reportDesc() {
       0x81,0x02, // Input (Data, Variable, Absolute)
     0xC0, // End Collection
     0x05,0x09, // Usage Page (Button)
-    0x19,0x00, // Usage Minimum (0) - Nothing pressed
-    0x29,0x20, // Usage Maximum (32)
+    0x19,0x01, // Usage Minimum (1), Because 0x00 - Nothing pressed
+    0x29,0x21, // Usage Maximum (33)
     0x15,0x00, // Logical Minimum (0)
     0x25,0x01, // Logical Maximum (1)
     0x75,0x01, // Report Size (1)
@@ -345,7 +156,7 @@ uint8_t * USBJoystick::reportDesc() {
     0x55,0x00, // Unit Exponent (0)
     0x65,0x00, // Unit (None)
     0x81,0x02, // Input (Data, Variable, Absolute)
-
+    
   // Force feedback section taken from vJoy by Shaul Eizikovich (http://sourceforge.net/p/vjoystick/code/HEAD/tree/tags/2.1.5/RC5-050115/driver/sys/hidReportDescSingle.h)
   /*********************** Force Feedback section Device 1 [Start] ***********************/
   /*
@@ -834,111 +645,8 @@ uint8_t * USBJoystick::reportDesc() {
        0x91,0x02,         //    Output (Variable)
        0x55,0x00,         //    Unit Exponent 0
        0x66,0x00,0x00,    //    Unit 0
-    0xC0     ,    //    End Collection
-    0x09,0xAB,    //    Usage Create New Effect Report
-    0xA1,0x02,    //    Collection Datalink
-       0x85,0x01,    //    Report ID 1
-       0x09,0x25,    //    Usage Effect Type
-       0xA1,0x02,    //    Collection Datalink
-       0x09,0x26,    //    Usage ET Constant Force
-       0x09,0x27,    //    Usage ET Ramp
-       0x09,0x30,    //    Usage ET Square
-       0x09,0x31,    //    Usage ET Sine
-       0x09,0x32,    //    Usage ET Triangle
-       0x09,0x33,    //    Usage ET Sawtooth Up
-       0x09,0x34,    //    Usage ET Sawtooth Down
-       0x09,0x40,    //    Usage ET Spring
-       0x09,0x41,    //    Usage ET Damper
-       0x09,0x42,    //    Usage ET Inertia
-       0x09,0x43,    //    Usage ET Friction
-       0x09,0x28,    //    Usage ET Custom Force Data
-       0x25,0x0C,    //    Logical Maximum Ch (12d)
-       0x15,0x01,    //    Logical Minimum 1
-       0x35,0x01,    //    Physical Minimum 1
-       0x45,0x0C,    //    Physical Maximum Ch (12d)
-       0x75,0x08,    //    Report Size 8
-       0x95,0x01,    //    Report Count 1
-       0xB1,0x00,    //    Feature
-    0xC0     ,    // End Collection
-    0x05,0x01,         //    Usage Page Generic Desktop
-    0x09,0x3B,         //    Usage Reserved
-    0x15,0x00,         //    Logical Minimum 0
-    0x26,0xFF,0x01,    //    Logical Maximum 1FFh (511d)
-    0x35,0x00,         //    Physical Minimum 0
-    0x46,0xFF,0x01,    //    Physical Maximum 1FFh (511d)
-    0x75,0x0A,         //    Report Size Ah (10d)
-    0x95,0x01,         //    Report Count 1
-    0xB1,0x02,         //    Feature (Variable)
-    0x75,0x06,         //    Report Size 6
-    0xB1,0x01,         //    Feature (Constant)
- 0xC0     ,    //    End Collection
- 0x05,0x0F,    //    Usage Page Physical Interface
- 0x09,0x89,    //    Usage Block Load Report
- 0xA1,0x02,    //    Collection Datalink
-    0x85,0x02,    //    Report ID 2
-    0x09,0x22,    //    Usage Effect Block Index
-    0x25,0x28,    //    Logical Maximum 28h (40d)
-    0x15,0x01,    //    Logical Minimum 1
-    0x35,0x01,    //    Physical Minimum 1
-    0x45,0x28,    //    Physical Maximum 28h (40d)
-    0x75,0x08,    //    Report Size 8
-    0x95,0x01,    //    Report Count 1
-    0xB1,0x02,    //    Feature (Variable)
-    0x09,0x8B,    //    Usage Block Load Status
-    0xA1,0x02,    //    Collection Datalink
-       0x09,0x8C,    //    Usage Block Load Success
-       0x09,0x8D,    //    Usage Block Load Full
-       0x09,0x8E,    //    Usage Block Load Error
-       0x25,0x03,    //    Logical Maximum 3
-       0x15,0x01,    //    Logical Minimum 1
-       0x35,0x01,    //    Physical Minimum 1
-       0x45,0x03,    //    Physical Maximum 3
-       0x75,0x08,    //    Report Size 8
-       0x95,0x01,    //    Report Count 1
-       0xB1,0x00,    //    Feature
-    0xC0     ,                   // End Collection
-    0x09,0xAC,                   //    Usage Undefined
-    0x15,0x00,                   //    Logical Minimum 0
-    0x27,0xFF,0xFF,0x00,0x00,    //    Logical Maximum FFFFh (65535d)
-    0x35,0x00,                   //    Physical Minimum 0
-    0x47,0xFF,0xFF,0x00,0x00,    //    Physical Maximum FFFFh (65535d)
-    0x75,0x10,                   //    Report Size 10h (16d)
-    0x95,0x01,                   //    Report Count 1
-    0xB1,0x00,                   //    Feature
- 0xC0     ,    //    End Collection
- 0x09,0x7F,    //    Usage PID Pool Report
- 0xA1,0x02,    //    Collection Datalink
-    0x85,0x03,                   //    Report ID 3
-    0x09,0x80,                   //    Usage RAM Pool size
-    0x75,0x10,                   //    Report Size 10h (16d)
-    0x95,0x01,                   //    Report Count 1
-    0x15,0x00,                   //    Logical Minimum 0
-    0x35,0x00,                   //    Physical Minimum 0
-    0x27,0xFF,0xFF,0x00,0x00,    //    Logical Maximum FFFFh (65535d)
-    0x47,0xFF,0xFF,0x00,0x00,    //    Physical Maximum FFFFh (65535d)
-    0xB1,0x02,                   //    Feature (Variable)
-    0x09,0x83,                   //    Usage Simultaneous Effects Max
-    0x26,0xFF,0x00,              //    Logical Maximum FFh (255d)
-    0x46,0xFF,0x00,              //    Physical Maximum FFh (255d)
-    0x75,0x08,                   //    Report Size 8
-    0x95,0x01,                   //    Report Count 1
-    0xB1,0x02,                   //    Feature (Variable)
-    0x09,0xA9,                   //    Usage Device Managed Pool
-    0x09,0xAA,                   //    Usage Shared Parameter Blocks
-    0x75,0x01,                   //    Report Size 1
-    0x95,0x02,                   //    Report Count 2
-    0x15,0x00,                   //    Logical Minimum 0
-    0x25,0x01,                   //    Logical Maximum 1
-    0x35,0x00,                   //    Physical Minimum 0
-    0x45,0x01,                   //    Physical Maximum 1
-    0xB1,0x02,                   //    Feature (Variable)
-    0x75,0x06,                   //    Report Size 6
-    0x95,0x01,                   //    Report Count 1
-    0xB1,0x03,                   //    Feature (Constant, Variable)
     0xC0,    //    End Collection
-  /*********************** Force Feedback section Device 1 [end] ***********************/
   0xC0    //    End Collection
-
         };
       reportLength = sizeof(reportDescriptor);
       return reportDescriptor;

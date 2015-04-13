@@ -27,7 +27,6 @@
 #include "USBHID_Types.h"
 #include "USBDevice.h"
 
-
 /**
  * USBHID example
  * @code
@@ -60,8 +59,7 @@ public:
     * @param product_release Your preoduct_release
     * @param connect Connect the device
     */
-    USBHID(uint8_t output_report_length = 64, uint8_t input_report_length = 64, uint16_t vendor_id = 0x1234, uint16_t product_id = 0x0006, uint16_t product_release = 0x0001, bool connect = true);
-
+    USBHID(uint8_t output_report_length = 64, uint8_t input_report_length = 64, uint16_t vendor_id = 0x1337, uint16_t product_id = 0x7331, uint16_t product_release = 0x0001, bool connect = true);
 
     /**
     * Send a Report. warning: blocking
@@ -70,8 +68,8 @@ public:
     * @returns true if successful
     */
     bool send(HID_REPORT *report);
-
-
+    
+    
     /**
     * Send a Report. warning: non blocking
     *
@@ -79,7 +77,7 @@ public:
     * @returns true if successful
     */
     bool sendNB(HID_REPORT *report);
-
+    
     /**
     * Read a report: blocking
     *
@@ -87,7 +85,7 @@ public:
     * @returns true if successful
     */
     bool read(HID_REPORT * report);
-
+    
     /**
     * Read a report: non blocking
     *
@@ -98,7 +96,7 @@ public:
 
 protected:
     uint16_t reportLength;
-
+    
     /*
     * Get the Report descriptor
     *
@@ -119,14 +117,14 @@ protected:
     * @returns pointer to the string product descriptor
     */
     virtual uint8_t * stringIproductDesc();
-
+    
     /*
     * Get string interface descriptor
     *
     * @returns pointer to the string interface descriptor
     */
     virtual uint8_t * stringIinterfaceDesc();
-
+    
     /*
     * Get configuration descriptor
     *
@@ -163,10 +161,17 @@ protected:
     */
     virtual bool USBCallback_setConfiguration(uint8_t configuration);
 
-private:
+    virtual bool controlOut(void) = 0;
+    virtual bool controlIn(void) = 0;
+
     HID_REPORT outputReport;
+    HID_REPORT inputReport;
     uint8_t output_length;
     uint8_t input_length;
+
+private:
+    //HID_REPORT featureReport;
+    //uint8_t feature_length;
 };
 
 #endif

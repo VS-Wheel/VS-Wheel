@@ -16,52 +16,54 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "stdint.h"
-#include "USBSerial.h"
+#ifndef CIRCBUFFER_H
+#define CIRCBUFFER_H
 
-int USBSerial::_putc(int c) {
-    if (!terminal_connected)
-        return 0;
-    send((uint8_t *)&c, 1);
-    return 1;
-}
+template <class T>
+class CircBuffer {
+public:
+    CircBuffer(int length) {
+        write = 0;
+        read = 0;
+        size = length + 1;
+        buf = (T *)malloc(size * sizeof(T));
+    };
 
-int USBSerial::_getc() {
-    uint8_t c = 0;
-    while (buf.isEmpty());
-    buf.dequeue(&c);
-    return c;
-}
+    bool isFull() {
+        return ((write + 1) % size == read);
+    };
 
+    bool isEmpty() {
+        return (read == write);
+    };
 
-bool USBSerial::writeBlock(uint8_t * buf, uint16_t size) {
-    if(size > MAX_PACKET_SIZE_EPBULK) {
-        return false;
-    }
-    if(!send(buf, size)) {
-        return false;
-    }
-    return true;
-}
-
-
-
-bool USBSerial::EP2_OUT_callback() {
-    uint8_t c[65];
-    uint32_t size = 0;
-
-    //we read the packet received and put it on the circular buffer
-    readEP(c, &size);
-    for (uint32_t i = 0; i < size; i++) {
-        buf.queue(c[i]);
+    void queue(T k) {
+        if (isFull()) {
+            read++;
+            read %= size;
+        }
+        buf[write++] = k;
+        write %= size;
     }
 
-    //call a potential handler
-    rx.call();
+    uint16_t available() {
+        return (write >= read) ? write - read : size - read + write;
+    };
 
-    return true;
-}
+    bool dequeue(T * c) {
+        bool empty = isEmpty();
+        if (!empty) {
+            *c = buf[read++];
+            read %= size;
+        }
+        return(!empty);
+    };
 
-uint8_t USBSerial::available() {
-    return buf.available();
-}
+private:
+    volatile uint16_t write;
+    volatile uint16_t read;
+    uint16_t size;
+    T * buf;
+};
+
+#endif

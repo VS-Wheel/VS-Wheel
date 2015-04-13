@@ -20,7 +20,6 @@
 #include "USBHAL.h"
 #include "USBHID.h"
 
-
 USBHID::USBHID(uint8_t output_report_length, uint8_t input_report_length, uint16_t vendor_id, uint16_t product_id, uint16_t product_release, bool connect): USBDevice(vendor_id, product_id, product_release)
 {
     output_length = output_report_length;
@@ -29,7 +28,6 @@ USBHID::USBHID(uint8_t output_report_length, uint8_t input_report_length, uint16
         USBDevice::connect();
     }
 }
-
 
 bool USBHID::send(HID_REPORT *report)
 {
@@ -59,9 +57,6 @@ bool USBHID::readNB(HID_REPORT *report)
     uint32_t bytesRead = 0;
     bool result;
     result = USBDevice::readEP_NB(EPINT_OUT, report->data, &bytesRead, MAX_HID_REPORT_SIZE);
-    // if readEP_NB did not succeed, does not issue a readStart
-    if (!result)
-        return false;
     report->length = bytesRead;
     if(!readStart(EPINT_OUT, MAX_HID_REPORT_SIZE))
         return false;
@@ -73,8 +68,6 @@ uint16_t USBHID::reportDescLength() {
     reportDesc();
     return reportLength;
 }
-
-
 
 //
 //  Route callbacks from lower layers to class(es)
@@ -121,7 +114,7 @@ bool USBHID::USBCallback_request() {
                                 success = true;
                             }
                             break;
-
+                     
                     default:
                         break;
                 }
@@ -151,13 +144,11 @@ bool USBHID::USBCallback_request() {
                 break;
         }
     }
-
     return success;
 }
 
 
 #define DEFAULT_CONFIGURATION (1)
-
 
 // Called in ISR context
 // Set configuration. Return false if the
@@ -171,31 +162,28 @@ bool USBHID::USBCallback_setConfiguration(uint8_t configuration) {
     addEndpoint(EPINT_IN, MAX_PACKET_SIZE_EPINT);
     addEndpoint(EPINT_OUT, MAX_PACKET_SIZE_EPINT);
 
-    // We activate the endpoint to be able to recceive data
+    // We activate the endpoint to be able to receive data
     readStart(EPINT_OUT, MAX_PACKET_SIZE_EPINT);
     return true;
 }
 
-
 uint8_t * USBHID::stringIinterfaceDesc() {
     static uint8_t stringIinterfaceDescriptor[] = {
-        0x08,               //bLength
+        0x14,               //bLength
         STRING_DESCRIPTOR,  //bDescriptorType 0x03
-        'H',0,'I',0,'D',0,  //bString iInterface - HID
+        'H',0,'I',0,'D',0,' ',0,'W',0,'h',0,'e',0,'e',0,'l',0,  //bString iInterface - HID Wheel
     };
     return stringIinterfaceDescriptor;
 }
 
 uint8_t * USBHID::stringIproductDesc() {
     static uint8_t stringIproductDescriptor[] = {
-        0x16,                                                       //bLength
+        0x12,                                                       //bLength
         STRING_DESCRIPTOR,                                          //bDescriptorType 0x03
-        'H',0,'I',0,'D',0,' ',0,'D',0,'E',0,'V',0,'I',0,'C',0,'E',0 //bString iProduct - HID device
+        'V',0,'S',0,' ',0,'W',0,'h',0,'e',0,'e',0,'l',0,             //bString iProduct - VS Wheel
     };
     return stringIproductDescriptor;
 }
-
-
 
 uint8_t * USBHID::reportDesc() {
     static uint8_t reportDescriptor[] = {
@@ -205,10 +193,10 @@ uint8_t * USBHID::reportDesc() {
         0x75, 0x08,         // report size = 8 bits
         0x15, 0x00,         // logical minimum = 0
         0x26, 0xFF, 0x00,   // logical maximum = 255
-        0x95, input_length, // report count
+        0x95, input_length,           // report count
         0x09, 0x01,         // usage
         0x81, 0x02,         // Input (array)
-        0x95, output_length,// report count
+        0x95, output_length,           // report count
         0x09, 0x02,         // usage
         0x91, 0x02,         // Output (array)
         0xC0                // end collection
@@ -253,8 +241,8 @@ uint8_t * USBHID::configurationDesc() {
         0x00,                           // bCountryCode
         0x01,                           // bNumDescriptors
         REPORT_DESCRIPTOR,              // bDescriptorType
-        (uint8_t)(LSB(this->reportDescLength())),  // wDescriptorLength (LSB)
-        (uint8_t)(MSB(this->reportDescLength())),  // wDescriptorLength (MSB)
+        LSB(this->reportDescLength()),  // wDescriptorLength (LSB)
+        MSB(this->reportDescLength()),  // wDescriptorLength (MSB)
 
         ENDPOINT_DESCRIPTOR_LENGTH,     // bLength
         ENDPOINT_DESCRIPTOR,            // bDescriptorType

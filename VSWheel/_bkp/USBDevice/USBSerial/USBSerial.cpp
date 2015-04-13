@@ -20,14 +20,12 @@
 #include "USBSerial.h"
 
 int USBSerial::_putc(int c) {
-    if (!terminal_connected)
-        return 0;
     send((uint8_t *)&c, 1);
     return 1;
 }
 
 int USBSerial::_getc() {
-    uint8_t c = 0;
+    uint8_t c;
     while (buf.isEmpty());
     buf.dequeue(&c);
     return c;
@@ -52,13 +50,15 @@ bool USBSerial::EP2_OUT_callback() {
 
     //we read the packet received and put it on the circular buffer
     readEP(c, &size);
-    for (uint32_t i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
         buf.queue(c[i]);
     }
 
     //call a potential handler
     rx.call();
 
+    // We reactivate the endpoint to receive next characters
+    readStart(EPBULK_OUT, MAX_PACKET_SIZE_EPBULK);
     return true;
 }
 
