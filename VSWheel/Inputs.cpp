@@ -4,7 +4,7 @@
  * @date   March 27 2015
  * @brief  All the functions needed for the inputs
  *
- * @version 1.0 : First version of all the working inputs
+ * @version 1.2 : First version of all the working inputs
  * Developpement: Sublime Text 2
  * Compiler: GNU ARM GCC
  *
@@ -34,7 +34,7 @@ DigitalIn padLeft(PAD_SHIFT_RIGHT);
 DigitalIn wheelBtnLeft(WHEEL_BTN_LEFT);
 DigitalIn wheelBtnRight(WHEEL_BTN_RIGHT);
 
-USBJoystick * joystick; // Joystick obj (The whole setup)
+USBJoystick * joystick; // Joystick obj
 QEI rotEnc(ROTENC_CH1, ROTENC_CH2, ROTENC_INDEX, ROTENC_PULSES, ROTENC_ENCODING); // Rotary encoder obj (Physical Wheel)
 
 void INPUTS::init(USBJoystick *joy)
@@ -58,7 +58,7 @@ void INPUTS::init(USBJoystick *joy)
     joystick = joy; // Object association
 }
 
-void INPUTS::send(void)
+bool INPUTS::send(void)
 {
         // Read the X axis , the Y axis and the buttons
         g25_readShifter();
@@ -81,6 +81,8 @@ void INPUTS::send(void)
         prevX_ = x_;
         prevY_ = y_;
         prevButtons_ = buttons_;
+
+        return true;
 }
 
 void INPUTS::g25_readShifter(void)
@@ -91,31 +93,35 @@ void INPUTS::g25_readShifter(void)
     // http://www.isrtv.com/forums/topic/13189-diy-g25-shifter-interface-with-h-pattern-sequential-and-handbrake-modes/
 
     // Shifter state
-    int shift=NO_SHIFT;
-    int mode=SHIFTER_MODE;
+    static int shift;
+    shift = NO_SHIFT;
+    static int mode;
+    mode = SHIFTER_MODE;
 
     // Reading of button states from G25 shift register
-    int b[16];
+    static int b[16];
 
     modePin = 0;                            // Parallel mode: inputs are read into shift register
-    wait(0.0001);                           // Wait for signal to settle
+    wait(0.00005);                           // Wait for signal to settle
     modePin = 1;                            // Serial mode: data bits are output on clock falling edge
     
     for(int i=0; i<16; i++)                 // Iteration over both 8 bit registers
     {
       clockPin = 0;                         // Generate clock falling edge
-      wait(0.0001);                         // Wait for signal to settle
+      wait(0.00005);                         // Wait for signal to settle
       b[i]=dataInPin.read();                // Read data bit and store it into bit array
       clockPin = 1;                         // Generate clock rising edge          
-      wait(0.0001);                         // Wait for signal to settle
+      wait(0.00005);                         // Wait for signal to settle
     }
 
     // Reading of shifter position
-    int x=(pot_XAxisShifter.read() * 1024);  // X axis
-    int y=(pot_YAxisShifter.read() * 1024);  // Y axis
+    static int x, y;
+    x = (pot_XAxisShifter.read() * 1024);  // X axis
+    y = (pot_YAxisShifter.read() * 1024);  // Y axis
     
     // Current gear calculation
-    int gear=0;                          // Default value is neutral
+    static int gear;                          // Default value is neutral
+    gear = 0;
 
     if(b[DI_MODE]==0)                    // H-shifter mode?
     {
@@ -216,17 +222,7 @@ void INPUTS::g25_readPedals(void)
 
 void INPUTS::g25_readWheel(void)
 {
-  // getPulses() returns the number of pulses acquired
-  // Casting the value into int16_t, because the host is expecting an int16_t
-  // multiplier = 32767 / difference between the left and right extremities  (in our case it's read dynamically, using X4_Encoding).
-  // In other words, zero for one side and the max value for the other side
-
-  x_ = (int16_t)(((rotEnc.getPulses() - offsetXAxis_) * multiplier_ * -1) + ROTENC_MAX_VALUE);
-
-  // The if conditions must be in that order, to be able to catch the upper limit
-  if(x_ < 0 && x_ < (-1 * ROTENC_CENTER)) x_ = ROTENC_MAX_VALUE;
-  if(x_ < 0) x_ = 0;
-
+  x_ = get_XAxis();
   // Read the paddles and the buttons
   buttons_ = buttons_ | padLeft.read() << 9;
   buttons_ = buttons_ | padRight.read() << 10;
@@ -241,7 +237,16 @@ uint8_t INPUTS::ped_getValue(uint16_t value)
 
 int16_t INPUTS::get_XAxis(void)
 {
-  return x_;
+  // getPulses() returns the number of pulses acquired
+  // Casting the value into int16_t, because the host is expecting an int16_t
+  // multiplier = 32767 / difference between the left and right extremities  (in our case it's read dynamically, using X4_Encoding).
+  // In other words, zero for one side and the max value for the other side
+
+  static int16_t x;
+  x = (int16_t)(((rotEnc.getPulses() - offsetXAxis_) * multiplier_ * -1) + ROTENC_MAX_VALUE);
+  if(x < 0 && x < (-1 * ROTENC_CENTER)) x = ROTENC_MAX_VALUE;
+  if(x < 0) x = 0;
+  return x;
 }
 
 int16_t INPUTS::get_encPulses(void)
@@ -257,10 +262,4 @@ void INPUTS::set_multiplier(float difLR)
 void INPUTS::set_offsetX(int16_t offX)
 {
   offsetXAxis_ = offX;
-}
-
-void INPUTS::set_DEBUG(int16_t Y)
-{
-  y_ = Y;
-  joystick->update(x_, y_, buttons_, throttle_, brake_, clutch_);
 }

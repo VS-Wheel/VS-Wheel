@@ -79,14 +79,13 @@ class INPUTS {
 	 * @brief The send function calls g25_readShifter(), g25_readPedals() and g25_readWheel() before 
 	 * comparing the last values to the new values. Then it sends the data to joystick.update()
 	 */
-		void send(void); // Send wheel inputs to the PC
+		bool send(void); // Send wheel inputs to the PC
 
 		int16_t get_XAxis(void);
 		int16_t get_encPulses(void);
 
 		void set_offsetX(int16_t offX);
 		void set_multiplier(float difLR);
-		void set_DEBUG(int16_t Y);
 		
    private:
 		/** Global class variable for the throttle */

@@ -8,88 +8,46 @@
 
 #include "USBHID.h"
 
-/**
- *
- * USBJoystick example
- * @code
- * #include "mbed.h"
- * #include "USBJoystick.h"
- *
- * USBJoystick joystick;
- *
- * int main(void)
- * {
- *   while (1)
- *   {
- *      joystick.move(20, 0);
- *      wait(0.5);
- *   }
- * }
- *
- * @endcode
- *
- *
- * @code
- * #include "mbed.h"
- * #include "USBJoystick.h"
- * #include <math.h>
- *
- * USBJoystick joystick;
- *
- * int main(void)
- * {
- *   int16_t i = 0;
- *   int16_t throttle = 0;
- *   int16_t rudder = 0;    
- *   int16_t x = 0;
- *   int16_t y = 0;
- *   int32_t radius = 120;
- *   int32_t angle = 0;
- *   int8_t button = 0;    
- *   int8_t hat = 0;    
- *   
- *   while (1) {
- *       // Basic Joystick
- *       throttle = (i >> 8) & 0xFF; // value -127 .. 128
- *       rudder = (i >> 8) & 0xFF;   // value -127 .. 128        
- *       button = (i >> 8) & 0x0F;   // value    0 .. 15, one bit per button     
- *        hat    = (i >> 8) & 0x07;   // value 0..7 or 8 for neutral         
- *       i++;        
- *       
- *       x = cos((double)angle*3.14/180.0)*radius;  // value -127 .. 128
- *       y = sin((double)angle*3.14/180.0)*radius;  // value -127 .. 128
- *       angle += 3;        
- *
- *       joystick.update(throttle, rudder, x, y, button, hat);
- *
- *       wait(0.001);
- *   }
- * }
- * @endcode
- */
-
-// Feature ID 1 (Create New Effect Report)
-struct CreateNewEffect{
+// Output ID 1 (Set Effect Report)
+struct setEffectReport{
     uint8_t reportID;
-    uint8_t effectType;
-    uint16_t byteCount;
+    uint8_t effectBlockIndex;
+    uint8_t directionEnable;
+    uint16_t duration;
+    uint16_t triggerRepeatInterval;
+    uint16_t samplePeriod;
+    uint8_t gain;
+    uint8_t triggerButton;
+    uint8_t ordinal1;
+    uint8_t ordinal2;
 };
 
-// Feature ID 2 (Block Load Report)
-struct BlockLoadReport{
+// Output ID 5 (Set Constant Force Report)
+struct setConstantForceReport{
     uint8_t reportID;
-    uint8_t blockIndex;
-    uint16_t status;
-    uint16_t byteCount;
+    uint8_t effectBlockIndex;
+    int16_t magnitude;
 };
 
-// Feature ID 3 (PID Pool Report)
-struct PidPoolReport{
+// Output ID 10 (Effect Operation Report)
+struct effectOperationReport{
     uint8_t reportID;
-    uint16_t ramPoolSize;
-    uint8_t simultaneousEffectMax;
-    uint8_t deviceManagedPool;
-    uint8_t sharedParameterBlock;
+    uint8_t effectBlockIndex;
+    uint8_t opEffect;
+    uint8_t loopCount;
+};
+
+// Output ID 12 (PID Device Control)
+struct pidDeviceControl{
+    uint8_t reportID;
+    uint8_t DC; // Device control
+};
+
+// Input ID 2 (PID State Report)
+struct pidStateReport{
+    uint8_t reportID;
+    uint8_t stateReport;
+    uint8_t deviceCtrl; // Device control
 };
 
 class USBJoystick: public USBHID {
@@ -122,8 +80,8 @@ class USBJoystick: public USBHID {
          */
          bool update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch);
 
-
          bool retrieveFFBData();
+         int16_t get_magnitude(void);
          
          /*
          * To define the report descriptor. Warning: this method has to store the length of the report descriptor in reportLength.
@@ -143,7 +101,7 @@ class USBJoystick: public USBHID {
 
          void _init();
          // Added functions
-         void extractDataOut(void); // Extract the data from the outputReport and place it in the right struct
+         void responseToHOST(uint8_t id);
 };
 
 #endif

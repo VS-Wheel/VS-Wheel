@@ -19,22 +19,24 @@
 
 #include "stdint.h"
 #include "USBJoystick.h"
+#include "Inputs.h"
 
-Serial debug(P0_0, P0_1); // tx, rx
+setConstantForceReport SetConstantForceReport;
+setEffectReport SetEffectReport;
+effectOperationReport EffectOperationReport;
+pidDeviceControl PidDeviceControl;
+pidStateReport PidStateReport;
 
-HID_REPORT data;
-
-CreateNewEffect createNewEffect;
-BlockLoadReport blockLoadReport;
-PidPoolReport   pidPoolReport;
-
-uint8_t test1, test2, test3;
+HID_REPORT inputRep;
+HID_REPORT ffbRep;
+HID_REPORT pidRep;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Joystick Inputs
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch) {
-             HID_REPORT report;
+
    x_ = x;
    y_ = y;
    buttons_ = buttons;
@@ -42,47 +44,123 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle
    brake_ = brake;
    clutch_ = clutch;
 
-   report.data[0] = 0x01;   // Report ID 1
-   report.data[1] = throttle_;
-   report.data[2] = brake_;
-   report.data[3] = clutch_;            
-   report.data[4] = x_ & 0xff;
-   report.data[5] = x_ >> 8;         
-   report.data[6] = y_ & 0xff;
-   report.data[7] = y_ >> 8;            
-   report.data[8] = buttons_ & 0xff;
-   report.data[9] = buttons_ >> 8;                                                                         
-   report.data[10] = buttons_ >> 16;
-   report.data[11] = buttons_ >> 24;
+   inputRep.data[0] = 0x01;   // Report ID 1
+   inputRep.data[1] = throttle_;
+   inputRep.data[2] = brake_;
+   inputRep.data[3] = clutch_;
+   inputRep.data[4] = x_ & 0xff;
+   inputRep.data[5] = x_ >> 8;         
+   inputRep.data[6] = y_ & 0xff;
+   inputRep.data[7] = y_ >> 8;            
+   inputRep.data[8] = buttons_ & 0xff;
+   inputRep.data[9] = buttons_ >> 8;                                                                         
+   inputRep.data[10] = buttons_ >> 16;
+   inputRep.data[11] = buttons_ >> 24;
 
-   report.length = 12;
+   inputRep.length = 12;
 
-   return send(&report);
+   return sendNB(&inputRep);
 }
 
 bool USBJoystick::retrieveFFBData() {
-   //HID_REPORT rep;
-   readNB(&data);
-   //debug.baud(115200);
-   /*if(readNB(&data) == true)
+   if(readNB(&ffbRep))
    {
-      for(int i=0;data.length;i++)
+      switch(ffbRep.data[0]) // report ID
       {
-        debug.printf("%h \n\r", data.data[i]);
-*/
-
-   /*if(data.data[i] == 0x0A)
-   {
-      rep.data[0] = 0x0A;
-      rep.data[1] = test1;
-      rep.data[2] = test2;
-      rep.data[3] = test3;
-      rep.length = 4;
-      send(&rep);
-   }*/
-
-   return true;
+        case 1: // ID 1
+          SetEffectReport.reportID = 1;
+          SetEffectReport.effectBlockIndex = ffbRep.data[1];
+          SetEffectReport.directionEnable = ffbRep.data[2];
+          SetEffectReport.duration = ffbRep.data[3] + (ffbRep.data[4] << 8);
+          SetEffectReport.triggerRepeatInterval = ffbRep.data[5] + (ffbRep.data[6] << 8);
+          SetEffectReport.samplePeriod = ffbRep.data[7] + (ffbRep.data[8] << 8);
+          SetEffectReport.gain = ffbRep.data[9];
+          SetEffectReport.triggerButton = ffbRep.data[10];
+          SetEffectReport.ordinal1 = ffbRep.data[12];
+          SetEffectReport.ordinal2 = ffbRep.data[13];
+        break;
+        case 5: // ID 5
+          SetConstantForceReport.reportID = 5;
+          SetConstantForceReport.effectBlockIndex = ffbRep.data[1];
+          SetConstantForceReport.magnitude = ffbRep.data[2] + (ffbRep.data[3] << 8);
+        break;
+        case 10: // ID 10
+          EffectOperationReport.reportID = 10;
+          EffectOperationReport.effectBlockIndex = ffbRep.data[1];
+          EffectOperationReport.opEffect = ffbRep.data[2];
+          EffectOperationReport.loopCount = ffbRep.data[3];
+        break;
+        case 12: // ID 12
+          PidDeviceControl.reportID = 12;
+          PidDeviceControl.DC = ffbRep.data[1];
+        break;
+      }
+      responseToHOST(ffbRep.data[0]);
    }
+   return true;
+}
+
+void USBJoystick::responseToHOST(uint8_t id)
+{   
+   PidStateReport.reportID = 2;
+    switch(id)
+    {
+      case 1:
+              PidStateReport.deviceCtrl &= 1;
+              PidStateReport.deviceCtrl |= (uint8_t)(SetEffectReport.effectBlockIndex << 1);
+      break;
+      case 5:
+              PidStateReport.deviceCtrl &= 1;
+              PidStateReport.deviceCtrl |= (uint8_t)(SetConstantForceReport.effectBlockIndex << 1);
+      break;
+      case 10:
+              if(EffectOperationReport.opEffect == 3)
+              {
+                PidStateReport.deviceCtrl &= 254;
+              }
+              else
+              {
+                PidStateReport.deviceCtrl |= 1;
+              }
+              PidStateReport.deviceCtrl &= 1;
+              PidStateReport.deviceCtrl |= (uint8_t)(EffectOperationReport.effectBlockIndex << 1);
+      break;
+      case 12:
+              switch(PidDeviceControl.DC)
+              {
+                 case 1: // Enable Actuators
+                  PidStateReport.stateReport |= 2;
+                 break;
+                 case 2: // Disable actuators
+                  PidStateReport.stateReport &= 253;
+                 break;
+                 case 3: // Stop All Effects
+                  PidStateReport.deviceCtrl &= 254;
+                 break;
+                 case 4: // Device Reset
+                  PidStateReport.stateReport = 0;
+                  PidStateReport.deviceCtrl = 0;
+                 break;
+                 case 5: // Device Pause
+                  PidStateReport.stateReport |= 1;
+                 break;
+                 case 6: // Device continue
+                  PidStateReport.stateReport &= 254;
+                 break;
+              }
+      break;
+    }
+    pidRep.data[0] = PidStateReport.reportID;
+    pidRep.data[1] = PidStateReport.stateReport;
+    pidRep.data[2] = PidStateReport.deviceCtrl;
+    pidRep.length = 3;
+    send(&pidRep);
+}
+
+int16_t USBJoystick::get_magnitude(void)
+{
+    return (int16_t)SetConstantForceReport.magnitude;
+}
 
 void USBJoystick::_init() {
 
@@ -92,18 +170,6 @@ void USBJoystick::_init() {
    x_ = 0;                       
    y_ = 0;     
    buttons_ = 0x00000000;
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Overidden methods
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Joystick FFB Management
-
-// Extract the data from the outputReport and place it in the right struct
-void USBJoystick::extractDataOut(void)
-{
-    
 }
 
 
