@@ -23,12 +23,12 @@
 #define ROTENC_ENCODING QEI::X4_ENCODING    // X2 encoding = looks at the state every time a rising or falling edge occurs on channel A
                                             // X4 encoding = looks at the state every time a rising or falling edge occurs on channel A or channel B
 #define ROTENC_MAX_VALUE	32767
-#define ROTENC_CENTER		16383	
-
+#define ROTENC_CENTER		16383
 #define PAD_SHIFT_LEFT		P0_0
 #define PAD_SHIFT_RIGHT		P0_1
 #define WHEEL_BTN_LEFT		P0_7
 #define WHEEL_BTN_RIGHT		P0_6
+#define WHEEL_YAXIS_ZERO	16384
 
 #define POT_THROTTLE		P0_23
 #define POT_BRAKE			P0_24

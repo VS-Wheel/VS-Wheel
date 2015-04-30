@@ -44,7 +44,7 @@ void INPUTS::init(USBJoystick *joy)
     brake_ = 0;
     clutch_ = 0;
     x_ = 0;
-    y_ = 0; // The Y axis is not used but it still there for anyone willing to use it
+    y_ = WHEEL_YAXIS_ZERO; // The Y axis is not used but it still there for anyone willing to use it
     buttons_ = 0;
 
     // Previous Values
@@ -52,7 +52,7 @@ void INPUTS::init(USBJoystick *joy)
     prevBrake_ = 0;
     prevClutch_ = 0;
     prevX_ = 0;
-    prevY_ = 0;
+    prevY_ = WHEEL_YAXIS_ZERO;
     prevButtons_ = 0;
 
     joystick = joy; // Object association
@@ -61,9 +61,9 @@ void INPUTS::init(USBJoystick *joy)
 bool INPUTS::send(void)
 {
         // Read the X axis , the Y axis and the buttons
-        g25_readShifter();
+        g25_readShifter(); // Takes 3ms
         // Read the 3 potentimeters
-        g25_readPedals();
+        g25_readPedals(); // Takes 0.1ms
         // Read the rotary encoder and the buttons on the wheel
         g25_readWheel();
 

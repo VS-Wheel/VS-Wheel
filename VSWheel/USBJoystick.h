@@ -82,6 +82,7 @@ class USBJoystick: public USBHID {
 
          bool retrieveFFBData();
          int16_t get_magnitude(void);
+         bool get_effectPlaying(void);
          
          /*
          * To define the report descriptor. Warning: this method has to store the length of the report descriptor in reportLength.

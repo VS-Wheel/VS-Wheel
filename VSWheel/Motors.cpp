@@ -19,29 +19,38 @@ void MOTORS::init(INPUTS *in, USBJoystick *j, float * m1_p, float * m1_d, bool *
 
 bool MOTORS::manageFFBData()
 {
-	//static int16_t magnitude = 0;
-	//magnitude = joy->get_magnitude();
-	int16_t magnitude = joy->get_magnitude();
+	bool effectPlaying = joy->get_effectPlaying();
+	if(effectPlaying)
+	{
+		int16_t magnitude = joy->get_magnitude();
 
-	if(magnitude > 0)
-	{
-		*m1_period = 0.0001f;
-		*m1_duty = ((float)(abs(magnitude)) / 255);
-		*m2_period = 0.0001f;
-		*m2_duty = ((float)(abs(magnitude)) / 255);
-		*m1_dir = 0;
-		*m2_dir = 0;
+		if(magnitude > 0)
+		{
+			*m1_period = 0.0001f;
+			*m1_duty = ((float)(abs(magnitude)) / 255);
+			*m2_period = 0.0001f;
+			*m2_duty = ((float)(abs(magnitude)) / 255);
+			*m1_dir = 0;
+			*m2_dir = 0;
+		}
+		if(magnitude < 0)
+		{
+			*m1_period = 0.0001f;
+			*m1_duty = ((float)(abs(magnitude)) / 255);
+			*m2_period = 0.0001f;
+			*m2_duty = ((float)(abs(magnitude)) / 255);
+			*m1_dir = 1;
+			*m2_dir = 1;
+		}
+		if(magnitude == 0)
+		{
+			*m1_period = 0.0f;
+			*m1_duty = 0.0f;
+			*m2_period = 0.00f;
+			*m2_duty = 0.0f;
+		}	
 	}
-	if(magnitude < 0)
-	{
-		*m1_period = 0.0001f;
-		*m1_duty = ((float)(abs(magnitude)) / 255);
-		*m2_period = 0.0001f;
-		*m2_duty = ((float)(abs(magnitude)) / 255);
-		*m1_dir = 1;
-		*m2_dir = 1;
-	}
-	if(magnitude == 0)
+	else
 	{
 		*m1_period = 0.0f;
 		*m1_duty = 0.0f;

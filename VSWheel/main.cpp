@@ -19,7 +19,7 @@ int main() {
     // Initialization of the needed objects
     static USBJoystick joystick;
     static MOTORS motors;
-    static INPUTS inputs; 
+    static INPUTS inputs;
 
     // Initialization of the motor1/motor2 PWM values (period, duty cycle, direction)
     static float m1_p = 0.00f, m1_d  = 0.00f;
@@ -34,6 +34,7 @@ int main() {
     // Initialization of the inputs & the motors + wheel calibration at start
     inputs.init(&joystick);
     motors.init(&inputs, &joystick, &m1_p, &m1_d, &m1_r, &m2_p, &m2_d, &m2_r);
+    wait(1.0);
     centerWheel(&inputs);
 
     // Infinite loop
@@ -80,9 +81,9 @@ void centerWheel(INPUTS *in)
     inputs = in;
 
     m1PWM.period(0.004f);
-    m1PWM.write(0.3f);
+    m1PWM.write(0.8f);
     m2PWM.period(0.004f);
-    m2PWM.write(0.3f);
+    m2PWM.write(0.8f);
     m1DIR = 1;
     m2DIR = 1;
     wait(0.001); // Delay is needed to prevent reading the changes to fast
@@ -130,7 +131,7 @@ void centerWheel(INPUTS *in)
     }
 
     // Updating the wheel resolution from acquired data
-    inputs->set_multiplier((float)leftExtremity-rightExtremity);
+    inputs->set_multiplier((float)(leftExtremity-rightExtremity));
     inputs->set_offsetX(rightExtremity);
 
     m1DIR = 1;

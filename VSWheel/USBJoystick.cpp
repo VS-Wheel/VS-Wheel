@@ -59,7 +59,7 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle
 
    inputRep.length = 12;
 
-   return sendNB(&inputRep);
+   return send(&inputRep);
 }
 
 bool USBJoystick::retrieveFFBData() {
@@ -160,6 +160,11 @@ void USBJoystick::responseToHOST(uint8_t id)
 int16_t USBJoystick::get_magnitude(void)
 {
     return (int16_t)SetConstantForceReport.magnitude;
+}
+
+bool USBJoystick::get_effectPlaying(void)
+{
+    return (bool)(PidStateReport.deviceCtrl & 1);
 }
 
 void USBJoystick::_init() {
