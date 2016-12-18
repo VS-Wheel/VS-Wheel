@@ -179,18 +179,18 @@ bool USBHID::USBCallback_setConfiguration(uint8_t configuration) {
 
 uint8_t * USBHID::stringIinterfaceDesc() {
     static uint8_t stringIinterfaceDescriptor[] = {
-        0x14,               //bLength
+        0x08,               //bLength
         STRING_DESCRIPTOR,  //bDescriptorType 0x03
-        'H',0,'I',0,'D',0,' ',0,'W',0,'h',0,'e',0,'e',0,'l',0,  //bString iInterface - HID Wheel
+        'H',0,'I',0,'D',0,  //bString iInterface - HID
     };
     return stringIinterfaceDescriptor;
 }
 
 uint8_t * USBHID::stringIproductDesc() {
     static uint8_t stringIproductDescriptor[] = {
-        0x12,                                                       //bLength
+        0x16,                                                       //bLength
         STRING_DESCRIPTOR,                                          //bDescriptorType 0x03
-        'V',0,'S',0,' ',0,'W',0,'h',0,'e',0,'e',0,'l',0,             //bString iProduct - VS Wheel
+        'H',0,'I',0,'D',0,' ',0,'D',0,'E',0,'V',0,'I',0,'C',0,'E',0 //bString iProduct - HID device
     };
     return stringIproductDescriptor;
 }
