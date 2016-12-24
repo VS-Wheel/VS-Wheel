@@ -15,21 +15,15 @@ PwmOut m2PWM(P2_1);
 void centerWheel(INPUTS *in);
 
 int main() {
-
     // Initialization of the needed objects
     static USBJoystick joystick;
     static MOTORS motors;
     static INPUTS inputs;
 
     // Initialization of the motor1/motor2 PWM values (period, duty cycle, direction)
-    static float m1_p = 0.00f, m1_d  = 0.00f;
-    static float prev_m1_p = 0.00f, prev_m1_d  = 0.00f;
-
-    static float m2_p = 0.00f, m2_d = 0.00f;
-    static float prev_m2_p = 0.00f, prev_m2_d = 0.00f;
-
+    static uint16_t m1_p = 0, m1_d  = 0;
+    static uint16_t m2_p = 0, m2_d = 0;
     static bool m1_r = 0, m2_r = 0;
-    static bool prev_m1_r = 0, prev_m2_r = 0;
 
     // Initialization of the inputs & the motors + wheel calibration at start
     inputs.init(&joystick);
@@ -47,25 +41,15 @@ int main() {
         // Playing FFB
         motors.manageFFBData(); 
 
-        // Sending PWM's to the motors if the values have changed
-        if(m1_p != prev_m1_p || m1_d != prev_m1_d || m1_r != prev_m1_r || m2_p != prev_m2_p || m2_d != prev_m2_d|| m2_r != prev_m2_r)
-        {
-            // Motor 1
-            m1PWM.period(m1_p);
-            m1PWM.write(m1_d);
-            m1DIR = m1_r;
-            // Motor 2
-            m2PWM.period(m2_p);
-            m2PWM.write(m2_d);
-            m2DIR = m2_r;
-        }
-        // Previous values
-        prev_m1_d = m1_d;
-        prev_m1_p = m1_p;
-        prev_m1_r = m1_r;
-        prev_m2_d = m2_d;
-        prev_m2_p = m2_p;
-        prev_m2_r = m2_r;
+        //Sending PWM's to the motors
+        // Motor 1
+        m1PWM.period_us(m1_p);
+        m1PWM.pulsewidth_us(m1_d);
+        m1DIR = m1_r;
+        // Motor 2
+        m2PWM.period_us(m2_p);
+        m2PWM.pulsewidth_us(m2_d);
+        m2DIR = m2_r;
     }
 }
 

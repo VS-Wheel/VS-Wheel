@@ -1,3 +1,3 @@
 @echo off
 cls
-call boot-script.lnk
+call boot-script.lnk winusb

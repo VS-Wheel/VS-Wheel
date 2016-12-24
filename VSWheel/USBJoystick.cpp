@@ -35,7 +35,7 @@ HID_REPORT pidRep;
 // Joystick Inputs
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch) {
+void USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch) {
 
    x_ = x;
    y_ = y;
@@ -59,7 +59,7 @@ bool USBJoystick::update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle
 
    inputRep.length = 12;
 
-   return send(&inputRep);
+   send(&inputRep);
 }
 
 bool USBJoystick::retrieveFFBData() {
@@ -154,7 +154,7 @@ void USBJoystick::responseToHOST(uint8_t id)
     pidRep.data[1] = PidStateReport.stateReport;
     pidRep.data[2] = PidStateReport.deviceCtrl;
     pidRep.length = 3;
-    send(&pidRep);
+    sendNB(&pidRep);
 }
 
 int16_t USBJoystick::get_magnitude(void)

@@ -10,7 +10,6 @@
 
 #include "mbed.h"
 #include "USBJoystick.h"
-#include "Multiplexer.h"
 #include "QEI.h"
 
 #define PEDDIV 258 							// Pedal divider
@@ -57,7 +56,7 @@
 #define DI_MODE            3
 
 // Shifter state
-#define DOWN_SHIFT         -1
+#define DOWN_SHIFT        -1
 #define NO_SHIFT           0
 #define UP_SHIFT           1
 
@@ -79,7 +78,7 @@ class INPUTS {
 	 * @brief The send function calls g25_readShifter(), g25_readPedals() and g25_readWheel() before 
 	 * comparing the last values to the new values. Then it sends the data to joystick.update()
 	 */
-		bool send(void); // Send wheel inputs to the PC
+		void send(void); // Send wheel inputs to the PC
 
 		int16_t get_XAxis(void);
 		int16_t get_encPulses(void);
@@ -100,19 +99,6 @@ class INPUTS {
 		int16_t y_;
 		/** Global class variable for all the buttons used for the wheel */
 		uint32_t buttons_;
-
-   		/** Global class variable for the previous value of the throttle */
-   		int8_t prevThrottle_;
-   		/** Global class variable for the previous value of the brake */
-		int8_t prevBrake_;
-		/** Global class variable for the previous value of the clutch */
-		int8_t prevClutch_;
-		/** Global class variable for the previous value of the X axis */
-		int16_t prevX_;
-		/** Global class variable for the previous value of the Y axis */
-		int16_t prevY_;
-		/** Global class variable for the previous values of all the buttons used for the wheel */
-		uint32_t prevButtons_;
 
 		/** Global class variable for the multiplier value of the wheel */
 		float multiplier_;

@@ -47,18 +47,10 @@ void INPUTS::init(USBJoystick *joy)
     y_ = WHEEL_YAXIS_ZERO; // The Y axis is not used but it still there for anyone willing to use it
     buttons_ = 0;
 
-    // Previous Values
-    prevThrottle_ = 0;
-    prevBrake_ = 0;
-    prevClutch_ = 0;
-    prevX_ = 0;
-    prevY_ = WHEEL_YAXIS_ZERO;
-    prevButtons_ = 0;
-
     joystick = joy; // Object association
 }
 
-bool INPUTS::send(void)
+void INPUTS::send(void)
 {
         // Read the X axis , the Y axis and the buttons
         g25_readShifter(); // Takes 3ms
@@ -66,23 +58,8 @@ bool INPUTS::send(void)
         g25_readPedals(); // Takes 0.1ms
         // Read the rotary encoder and the buttons on the wheel
         g25_readWheel();
-
-        // Comparing the previous and the new value, before sending data.
-        // This prevents flooding the transmission buffer
-        if(throttle_ != prevThrottle_ || brake_ != prevBrake_ || clutch_ != prevClutch_ || x_ != prevX_ || y_ != prevY_|| buttons_ != prevButtons_)
-        {
-            joystick->update(x_, y_, buttons_, throttle_, brake_, clutch_);
-        }
-        
-        // Setting the previous values
-        prevThrottle_ = throttle_;
-        prevBrake_ = brake_;
-        prevClutch_ = clutch_;
-        prevX_ = x_;
-        prevY_ = y_;
-        prevButtons_ = buttons_;
-
-        return true;
+        // Send data to host
+        joystick->update(x_, y_, buttons_, throttle_, brake_, clutch_);
 }
 
 void INPUTS::g25_readShifter(void)
@@ -102,16 +79,16 @@ void INPUTS::g25_readShifter(void)
     static int b[16];
 
     modePin = 0;                            // Parallel mode: inputs are read into shift register
-    wait(0.00005);                           // Wait for signal to settle
+    wait_us(5);                             // Wait for signal to settle
     modePin = 1;                            // Serial mode: data bits are output on clock falling edge
     
     for(int i=0; i<16; i++)                 // Iteration over both 8 bit registers
     {
       clockPin = 0;                         // Generate clock falling edge
-      wait(0.00005);                         // Wait for signal to settle
+      wait_us(5);                           // Wait for signal to settle
       b[i]=dataInPin.read();                // Read data bit and store it into bit array
       clockPin = 1;                         // Generate clock rising edge          
-      wait(0.00005);                         // Wait for signal to settle
+      wait_us(5);                           // Wait for signal to settle
     }
 
     // Reading of shifter position
@@ -120,7 +97,7 @@ void INPUTS::g25_readShifter(void)
     y = (pot_YAxisShifter.read() * 1024);  // Y axis
     
     // Current gear calculation
-    static int gear;                          // Default value is neutral
+    static int gear;                     // Default value is neutral
     gear = 0;
 
     if(b[DI_MODE]==0)                    // H-shifter mode?

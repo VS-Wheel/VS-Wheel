@@ -78,7 +78,7 @@ class USBJoystick: public USBHID {
          * @param hat hat state 0 (up), 1 (right, 2 (down), 3 (left) or 4 (neutral)
          * @returns true if there is no error, false otherwise
          */
-         bool update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch);
+         void update(int16_t x, int16_t y, uint32_t buttons, int8_t throttle, int8_t brake, int8_t clutch);
 
          bool retrieveFFBData();
          int16_t get_magnitude(void);
